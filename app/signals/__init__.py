@@ -1,0 +1,1 @@
+"""Signal aggregation for FinSight AI (rolls sentiment + entity mentions into signals)."""

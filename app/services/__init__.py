@@ -1,0 +1,1 @@
+"""Data-access services for the Streamlit dashboard (internal equivalents of the BRD's REST endpoints)."""

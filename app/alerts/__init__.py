@@ -1,0 +1,1 @@
+"""Alert generation for FinSight AI (compares latest signals against watchlist thresholds)."""
