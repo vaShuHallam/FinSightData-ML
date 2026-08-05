@@ -1,10 +1,8 @@
 """
 Entity-tagging pipeline entry point.
 
-Reads articles that haven't been tagged yet, runs a tagger against each, and
-writes results to article_entities. This is the missing link between
-"articles exist" and "signals can be aggregated per entity" — signals and
-alerts both key off article_entities.
+Reads articles that haven't been tagged yet, runs a tagger against each,
+and writes results to article_entities.
 """
 
 import logging
@@ -18,8 +16,7 @@ from app.models import Article, ArticleEntity, Entity, PipelineRun, PipelineRunT
 logger = logging.getLogger(__name__)
 
 
-def build_default_tagger() -> BaseEntityTagger:
-    """Load all active entities from the DB and build a RuleBasedEntityTagger."""
+def build_rule_based_tagger() -> RuleBasedEntityTagger:
     with get_session() as session:
         rows = (
             session.query(Entity.entity_id, Entity.name, Entity.ticker_symbol)
@@ -29,14 +26,28 @@ def build_default_tagger() -> BaseEntityTagger:
     return RuleBasedEntityTagger.from_db_rows(rows)
 
 
-def run_entity_tagging(tagger: BaseEntityTagger | None = None) -> dict:
-    """
-    Tag every article that doesn't yet have any article_entities rows.
+def build_hybrid_tagger(spacy_model: str = "en_core_web_trf"):
+    """Rule-based for all entities + spaCy specifically for companies. See hybrid_tagger.py."""
+    from app.entity_tagging.hybrid_tagger import HybridEntityTagger
+    from app.entity_tagging.spacy_tagger import SpacyEntityTagger
+    from app.models import EntityType
 
-    Returns a summary dict: {articles_checked, articles_tagged, mentions_created}.
-    Writes a pipeline_runs row, matching the pattern used by ingestion.
-    """
-    tagger = tagger or build_default_tagger()
+    rule_based = build_rule_based_tagger()
+
+    with get_session() as session:
+        company_rows = (
+            session.query(Entity.entity_id, Entity.name, Entity.ticker_symbol)
+            .filter(Entity.is_active.is_(True))
+            .filter(Entity.entity_type == EntityType.COMPANY.value)
+            .all()
+        )
+    spacy_tagger = SpacyEntityTagger.from_db_rows(company_rows, model_name=spacy_model)
+
+    return HybridEntityTagger(rule_based, spacy_tagger)
+
+
+def run_entity_tagging(tagger: BaseEntityTagger | None = None) -> dict:
+    tagger = tagger or build_rule_based_tagger()
     run_id = _start_pipeline_run()
     checked = tagged = mentions_created = 0
     error_detail = None
@@ -50,12 +61,9 @@ def run_entity_tagging(tagger: BaseEntityTagger | None = None) -> dict:
         error_detail = str(exc)
 
     _finish_pipeline_run(run_id, status, articles_processed=tagged, error_detail=error_detail)
-
     summary = {
-        "articles_checked": checked,
-        "articles_tagged": tagged,
-        "mentions_created": mentions_created,
-        "status": status.value,
+        "articles_checked": checked, "articles_tagged": tagged,
+        "mentions_created": mentions_created, "status": status.value,
     }
     logger.info("Entity tagging summary: %s", summary)
     return summary
@@ -63,10 +71,7 @@ def run_entity_tagging(tagger: BaseEntityTagger | None = None) -> dict:
 
 def _tag_untagged_articles(tagger: BaseEntityTagger) -> tuple[int, int, int]:
     checked = tagged = mentions_created = 0
-
     with get_session() as session:
-        # Articles with zero existing article_entities rows — avoids re-tagging
-        # on every run as new articles accumulate.
         already_tagged_ids = {aid for (aid,) in session.query(ArticleEntity.article_id).distinct()}
         query = session.query(Article)
         if already_tagged_ids:
@@ -79,13 +84,9 @@ def _tag_untagged_articles(tagger: BaseEntityTagger) -> tuple[int, int, int]:
             if not mentions:
                 continue
             for m in mentions:
-                session.add(
-                    ArticleEntity(
-                        article_id=article.article_id,
-                        entity_id=m.entity_id,
-                        mention_count=m.mention_count,
-                    )
-                )
+                session.add(ArticleEntity(
+                    article_id=article.article_id, entity_id=m.entity_id, mention_count=m.mention_count,
+                ))
                 mentions_created += 1
             tagged += 1
 
@@ -100,9 +101,7 @@ def _start_pipeline_run() -> int:
         return run.run_id
 
 
-def _finish_pipeline_run(
-    run_id: int, status: PipelineStatus, articles_processed: int, error_detail: str | None
-) -> None:
+def _finish_pipeline_run(run_id, status, articles_processed, error_detail):
     with get_session() as session:
         run = session.get(PipelineRun, run_id)
         run.status = status.value

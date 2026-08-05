@@ -1,3 +1,4 @@
+import json
 import os
 
 try:
@@ -20,12 +21,29 @@ REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "finsight-ai/0.1")
 SENTIMENT_CONFIDENCE_THRESHOLD: float = float(os.getenv("SENTIMENT_CONFIDENCE_THRESHOLD", "0.6"))
 
 # --- Signal aggregation ---
-# How many hours back to look when aggregating sentiment into a signal.
 SIGNAL_WINDOW_HOURS: int = int(os.getenv("SIGNAL_WINDOW_HOURS", "6"))
-
-# Aggregate score thresholds (-1.0 to 1.0) that classify signal_strength.
-# |score| >= STRONG    -> "Strong Bullish"/"Strong Bearish"
-# |score| >= MODERATE  -> "Bullish"/"Bearish"
-# otherwise            -> "Neutral"
 SIGNAL_STRONG_THRESHOLD: float = float(os.getenv("SIGNAL_STRONG_THRESHOLD", "0.6"))
 SIGNAL_MODERATE_THRESHOLD: float = float(os.getenv("SIGNAL_MODERATE_THRESHOLD", "0.2"))
+
+# --- Alerts ---
+DEFAULT_ALERT_THRESHOLD: float = float(os.getenv("DEFAULT_ALERT_THRESHOLD", "0.60"))
+
+# --- Settings overrides (Settings page / REQ-9) ---
+# The BRD's ten-table schema has no dedicated settings table, so
+# runtime-tunable values (confidence threshold, aggregation window, default
+# alert threshold, per-source credibility overrides) are persisted here
+# instead — a lightweight JSON file the Settings page reads and writes.
+# IMPORTANT: because Python only executes this module once per process,
+# changes saved here take effect the NEXT time a script/the app starts, not
+# instantly within an already-running process. The Settings page states
+# this explicitly rather than implying a live, instant update.
+SETTINGS_FILE = "app_settings.json"
+SOURCE_CREDIBILITY_OVERRIDES: dict = {}
+
+if os.path.exists(SETTINGS_FILE):
+    with open(SETTINGS_FILE) as f:
+        _overrides = json.load(f)
+    SENTIMENT_CONFIDENCE_THRESHOLD = _overrides.get("confidence_threshold", SENTIMENT_CONFIDENCE_THRESHOLD)
+    SIGNAL_WINDOW_HOURS = _overrides.get("aggregation_window_hours", SIGNAL_WINDOW_HOURS)
+    DEFAULT_ALERT_THRESHOLD = _overrides.get("default_alert_threshold", DEFAULT_ALERT_THRESHOLD)
+    SOURCE_CREDIBILITY_OVERRIDES = _overrides.get("source_credibility_overrides", {})

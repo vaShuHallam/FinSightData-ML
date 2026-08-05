@@ -1,0 +1,17 @@
+{
+  "version_label": "v1",
+  "computed_at": "2026-08-03T20:29:56.586992+00:00",
+  "gold_standard_size": 150,
+  "cohens_kappa": 0.6203781034090047,
+  "n_scored": 150,
+  "macro_f1": 0.6322355733570687,
+  "positive_f1": 0.6728971962616822,
+  "negative_f1": 0.7238095238095238,
+  "neutral_f1": 0.5,
+  "abstention_rate": 0.11333333333333333,
+  "entity_precision": 0.9821428571428571,
+  "entity_recall": 0.1971326164874552,
+  "tp": 55,
+  "fp": 1,
+  "fn": 224
+}

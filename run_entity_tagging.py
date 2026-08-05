@@ -1,21 +1,25 @@
 """
 CLI entry point to run one entity-tagging cycle.
 
-Tags every article that doesn't yet have article_entities rows, using the
-rule-based matcher against entities already in the database.
-
 Usage:
-    python run_entity_tagging.py
+    python run_entity_tagging.py                    # rule-based only (default, no dependencies)
+    python run_entity_tagging.py --tagger hybrid     # spaCy (companies) + rule-based (everything else)
 """
 
+import argparse
 import logging
 
-from app.entity_tagging.pipeline import run_entity_tagging
+from app.entity_tagging.pipeline import build_hybrid_tagger, build_rule_based_tagger, run_entity_tagging
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 if __name__ == "__main__":
-    summary = run_entity_tagging()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--tagger", choices=["rule_based", "hybrid"], default="rule_based")
+    args = parser.parse_args()
+
+    tagger = build_hybrid_tagger() if args.tagger == "hybrid" else build_rule_based_tagger()
+    summary = run_entity_tagging(tagger)
 
     print(f"\nArticles checked:   {summary['articles_checked']}")
     print(f"Articles tagged:    {summary['articles_tagged']}")
