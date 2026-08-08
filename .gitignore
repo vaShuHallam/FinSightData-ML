@@ -1,19 +1,44 @@
 # Environment & secrets
 .env
+.env.*
+!.env.example
 .venv/
 venv/
+env/
 
-# Local database files
-*.db
-*.sqlite
-*.sqlite3
-*.xlsx
 # Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
 .mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local databases and app state
+*.db
+*.sqlite
+*.sqlite3
+app_settings.json
+
+# ML / data artifacts
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+*.onnx
+*.parquet
+*.feather
+mlruns/
+wandb/
+
+# Generated exports
+*.xlsx
+
+# Streamlit
+.streamlit/secrets.toml
 
 # OS / editor
 .DS_Store
