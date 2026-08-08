@@ -24,6 +24,8 @@ Design notes:
 import logging
 from datetime import datetime, timezone
 
+from sqlalchemy import func
+
 from app.db import get_session
 from app.models import (
     Alert, Article, ArticleEntity, PipelineRun, PipelineRunType,
@@ -114,13 +116,14 @@ def _check_all_watchlist_entries() -> tuple[int, int]:
 
 def _representative_headline(session, entity_id: int, window_start, window_end) -> str | None:
     """Most recent article headline mentioning this entity within the signal's window."""
+    effective_time = func.coalesce(Article.fetched_at, Article.published_at)
     row = (
         session.query(Article.headline)
         .join(ArticleEntity, ArticleEntity.article_id == Article.article_id)
         .filter(ArticleEntity.entity_id == entity_id)
-        .filter(Article.published_at >= window_start)
-        .filter(Article.published_at <= window_end)
-        .order_by(Article.published_at.desc())
+        .filter(effective_time >= window_start)
+        .filter(effective_time <= window_end)
+        .order_by(effective_time.desc())
         .first()
     )
     return row[0] if row else None

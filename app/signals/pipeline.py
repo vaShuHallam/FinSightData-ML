@@ -65,7 +65,7 @@ def _aggregate_all_entities(window_hours: int) -> tuple[int, int]:
     window_start = now - timedelta(hours=window_hours)
 
     with get_session() as session:
-        effective_time = func.coalesce(Article.published_at, Article.fetched_at)
+        effective_time = func.coalesce(Article.fetched_at, Article.published_at)
 
         entity_sentiment = aliased(SentimentResult)
         article_sentiment = aliased(SentimentResult)
