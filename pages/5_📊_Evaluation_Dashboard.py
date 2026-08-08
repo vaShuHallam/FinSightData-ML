@@ -16,23 +16,40 @@ from app.services.evaluation_service import (
     build_comparison_table,
     get_iteration_summary,
     get_user_testing_results,
+    list_available_result_versions,
     load_results,
 )
 
 st.set_page_config(page_title="Evaluation Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Evaluation Dashboard")
 
-v1 = load_results("v1")
-v2 = load_results("v2")
+available_versions = list_available_result_versions()
 user_testing = get_user_testing_results()
 
-if v1 is None:
-    st.info("No v1 evaluation results found yet. Run compute_gold_standard_metrics.py first.")
+if not available_versions:
+    st.info("No evaluation results found yet. Run compute_gold_standard_metrics.py first.")
     st.stop()
 
+default_base = "v1" if "v1" in available_versions else available_versions[0]
+default_compare = "v2" if "v2" in available_versions else None
+
+selector_col1, selector_col2 = st.columns(2)
+with selector_col1:
+    base_version = st.selectbox(
+        "Base version",
+        options=available_versions,
+        index=available_versions.index(default_base),
+    )
+with selector_col2:
+    compare_candidates = ["(none)"] + [v for v in available_versions if v != base_version]
+    compare_index = compare_candidates.index(default_compare) if default_compare in compare_candidates else 0
+    compare_version = st.selectbox("Compare version", options=compare_candidates, index=compare_index)
+
+v1 = load_results(base_version)
+v2 = load_results(compare_version) if compare_version != "(none)" else None
+
 if v2 is None:
-    st.caption("ℹ️ v2 results not found yet — showing v1 only. Once you run a v2 evaluation "
-              "(`--version-label v2`), this page will automatically show the full comparison.")
+    st.caption("ℹ️ Comparison version not selected or unavailable — showing single-version metrics.")
 
 # --- Benchmark Information ---
 st.subheader("Benchmark Information")
@@ -71,8 +88,8 @@ def _fmt_delta(row):
     return f"{color} {direction_arrow} {val:+.3f}"
 
 table_df = pd.DataFrame([
-    {"Metric": r["metric"], "v1 Result": _fmt(r["v1_result"]),
-     "v2 Result": _fmt(r["v2_result"]), "Delta": _fmt_delta(r)}
+    {"Metric": r["metric"], f"{base_version} Result": _fmt(r["v1_result"]),
+     f"{compare_version} Result": _fmt(r["v2_result"]), "Delta": _fmt_delta(r)}
     for r in rows
 ])
 st.dataframe(table_df, width="stretch", hide_index=True)
@@ -86,7 +103,7 @@ st.divider()
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Confusion Matrix (v1)")
+    st.subheader(f"Confusion Matrix ({base_version})")
     if v1.get("confusion_matrix"):
         labels = v1["confusion_matrix_labels"]
         fig = go.Figure(data=go.Heatmap(
@@ -127,8 +144,8 @@ st.divider()
 # --- Abstention Rate ---
 st.subheader("Abstention Rate")
 a1, a2 = st.columns(2)
-a1.metric("v1", f"{v1.get('abstention_rate', 0):.1%}")
-a2.metric("v2", f"{v2.get('abstention_rate', 0):.1%}" if v2 else "—")
+a1.metric(base_version, f"{v1.get('abstention_rate', 0):.1%}")
+a2.metric(compare_version if v2 else "comparison", f"{v2.get('abstention_rate', 0):.1%}" if v2 else "—")
 
 st.divider()
 

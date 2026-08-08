@@ -3,7 +3,7 @@ CLI entry point to run one entity-tagging cycle.
 
 Usage:
     python run_entity_tagging.py                    # rule-based only (default, no dependencies)
-    python run_entity_tagging.py --tagger hybrid     # spaCy (companies) + rule-based (everything else)
+    python run_entity_tagging.py --tagger hybrid     # spaCy + rule-based; falls back to rule-based if spaCy unavailable
 """
 
 import argparse

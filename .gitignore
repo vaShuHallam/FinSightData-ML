@@ -36,6 +36,8 @@ wandb/
 
 # Generated exports
 *.xlsx
+evaluation_results_*.json
+iteration_notes.md
 
 # Streamlit
 .streamlit/secrets.toml

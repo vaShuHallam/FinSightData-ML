@@ -21,11 +21,12 @@ from app.services.entity_explorer_service import (
     get_signal_history,
     get_sentiment_history,
 )
+from app.session import get_session_id
 
 st.set_page_config(page_title="Entity Explorer", page_icon="🔍", layout="wide")
 st.title("🔍 Entity Explorer")
 
-SESSION_ID = "demo-user"  # no login system yet — see README "Scope decisions"
+SESSION_ID = get_session_id()
 
 entities = get_active_entities()
 if not entities:

@@ -18,10 +18,9 @@ Usage:
 
 from app.db import get_session
 from app.models import Entity, Watchlist
+from app.config import DEFAULT_LOCAL_SESSION_ID
 
-# A single demo session — in the real dashboard this would be the logged-in
-# user's session_id, generated per browser session per the BRD.
-SESSION_ID = "demo-user"
+SESSION_ID = DEFAULT_LOCAL_SESSION_ID
 
 # (entity_name, alert_threshold, window_size_hours)
 STARTER_WATCHLIST = [

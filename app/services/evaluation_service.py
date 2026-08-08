@@ -13,6 +13,7 @@ never recomputes them, only loads and presents them.
 
 import json
 import os
+from pathlib import Path
 from datetime import datetime, timezone
 
 from app.db import get_session
@@ -44,6 +45,15 @@ def load_results(version_label: str) -> dict | None:
         return None
     with open(path) as f:
         return json.load(f)
+
+
+def list_available_result_versions() -> list[str]:
+    versions: list[str] = []
+    for path in Path(".").glob("evaluation_results_*.json"):
+        suffix = path.stem.replace("evaluation_results_", "", 1)
+        if suffix:
+            versions.append(suffix)
+    return sorted(set(versions))
 
 
 def get_user_testing_results() -> dict:

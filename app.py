@@ -23,12 +23,11 @@ from app.services.dashboard_service import (
     get_unacknowledged_alert_count,
     get_watchlist_signals,
 )
+from app.session import get_session_id
 
 st.set_page_config(page_title="FinSight AI — Dashboard", page_icon="📊", layout="wide")
 
-# No login system yet — every user shares this single demo session_id.
-# Documented simplification; see README "Scope decisions".
-SESSION_ID = "demo-user"
+SESSION_ID = get_session_id()
 
 
 # --- Data loading, cached briefly so widget interactions don't hammer the DB ---

@@ -16,9 +16,11 @@ ALPHAVANTAGE_KEY: str = os.getenv("ALPHAVANTAGE_KEY", "")
 REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
 REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
 REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "finsight-ai/0.1")
+DEFAULT_LOCAL_SESSION_ID: str = os.getenv("DEFAULT_LOCAL_SESSION_ID", "local-dev")
 
 # --- Sentiment analysis (FinBERT) ---
 SENTIMENT_CONFIDENCE_THRESHOLD: float = float(os.getenv("SENTIMENT_CONFIDENCE_THRESHOLD", "0.6"))
+SENTIMENT_BACKEND: str = os.getenv("SENTIMENT_BACKEND", "auto").strip().lower()
 
 # --- Signal aggregation ---
 SIGNAL_WINDOW_HOURS: int = int(os.getenv("SIGNAL_WINDOW_HOURS", "6"))

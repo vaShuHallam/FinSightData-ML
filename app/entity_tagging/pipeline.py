@@ -41,9 +41,15 @@ def build_hybrid_tagger(spacy_model: str = "en_core_web_trf"):
             .filter(Entity.entity_type == EntityType.COMPANY.value)
             .all()
         )
-    spacy_tagger = SpacyEntityTagger.from_db_rows(company_rows, model_name=spacy_model)
-
-    return HybridEntityTagger(rule_based, spacy_tagger)
+    try:
+        spacy_tagger = SpacyEntityTagger.from_db_rows(company_rows, model_name=spacy_model)
+        return HybridEntityTagger(rule_based, spacy_tagger)
+    except Exception as exc:
+        logger.warning(
+            "spaCy hybrid tagger unavailable (%s). Falling back to rule-based tagger only.",
+            exc,
+        )
+        return rule_based
 
 
 def run_entity_tagging(tagger: BaseEntityTagger | None = None) -> dict:

@@ -8,6 +8,9 @@ BRD's REST endpoints, called directly by Streamlit.
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import and_, func
+from sqlalchemy.orm import aliased
+
 from app.db import get_session
 from app.models import Article, ArticleEntity, Entity, SentimentResult, Signal, Watchlist
 
@@ -71,12 +74,34 @@ def get_signal_distribution(entity_id: int, hours: int) -> list[dict]:
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
     with get_session() as session:
+        entity_sentiment = aliased(SentimentResult)
+        article_sentiment = aliased(SentimentResult)
         rows = (
-            session.query(Article.published_at, SentimentResult.sentiment_label)
+            session.query(
+                Article.published_at,
+                func.coalesce(entity_sentiment.sentiment_label, article_sentiment.sentiment_label),
+            )
             .join(ArticleEntity, ArticleEntity.article_id == Article.article_id)
-            .join(SentimentResult, SentimentResult.article_id == Article.article_id)
+            .outerjoin(
+                entity_sentiment,
+                and_(
+                    entity_sentiment.article_id == Article.article_id,
+                    entity_sentiment.entity_id == ArticleEntity.entity_id,
+                ),
+            )
+            .outerjoin(
+                article_sentiment,
+                and_(
+                    article_sentiment.article_id == Article.article_id,
+                    article_sentiment.entity_id.is_(None),
+                ),
+            )
             .filter(ArticleEntity.entity_id == entity_id)
             .filter(Article.published_at >= since)
+            .filter(
+                (entity_sentiment.result_id.isnot(None))
+                | (article_sentiment.result_id.isnot(None))
+            )
             .all()
         )
 
@@ -96,11 +121,30 @@ def get_signal_distribution(entity_id: int, hours: int) -> list[dict]:
 def get_recent_articles(entity_id: int, limit: int = 20) -> list[dict]:
     """Recent Articles Table: most recent articles mentioning this entity."""
     with get_session() as session:
+        entity_sentiment = aliased(SentimentResult)
+        article_sentiment = aliased(SentimentResult)
         rows = (
-            session.query(Article.headline, Article.published_at,
-                         SentimentResult.sentiment_label, SentimentResult.confidence_score)
+            session.query(
+                Article.headline,
+                Article.published_at,
+                func.coalesce(entity_sentiment.sentiment_label, article_sentiment.sentiment_label),
+                func.coalesce(entity_sentiment.confidence_score, article_sentiment.confidence_score),
+            )
             .join(ArticleEntity, ArticleEntity.article_id == Article.article_id)
-            .outerjoin(SentimentResult, SentimentResult.article_id == Article.article_id)
+            .outerjoin(
+                entity_sentiment,
+                and_(
+                    entity_sentiment.article_id == Article.article_id,
+                    entity_sentiment.entity_id == ArticleEntity.entity_id,
+                ),
+            )
+            .outerjoin(
+                article_sentiment,
+                and_(
+                    article_sentiment.article_id == Article.article_id,
+                    article_sentiment.entity_id.is_(None),
+                ),
+            )
             .filter(ArticleEntity.entity_id == entity_id)
             .order_by(Article.published_at.desc())
             .limit(limit)

@@ -7,6 +7,9 @@ BRD's REST endpoints, called directly by Streamlit.
 
 from datetime import date, datetime, time
 
+from sqlalchemy import and_
+from sqlalchemy.orm import aliased
+
 from app.db import get_session
 from app.models import Article, ArticleEntity, Entity, SentimentResult
 
@@ -27,9 +30,16 @@ def get_articles(
     badge, newest first.
     """
     with get_session() as session:
+        article_sentiment = aliased(SentimentResult)
         query = (
-            session.query(Article, SentimentResult.sentiment_label)
-            .outerjoin(SentimentResult, SentimentResult.article_id == Article.article_id)
+            session.query(Article, article_sentiment.sentiment_label)
+            .outerjoin(
+                article_sentiment,
+                and_(
+                    article_sentiment.article_id == Article.article_id,
+                    article_sentiment.entity_id.is_(None),
+                ),
+            )
         )
 
         if search:
@@ -75,6 +85,7 @@ def get_article_detail(article_id: int) -> dict | None:
         sentiment = (
             session.query(SentimentResult)
             .filter(SentimentResult.article_id == article_id)
+            .filter(SentimentResult.entity_id.is_(None))
             .first()
         )
 

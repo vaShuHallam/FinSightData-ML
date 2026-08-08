@@ -5,12 +5,9 @@ For every entity mentioned by at least one article in the trailing window,
 computes one Signal row via app/signals/aggregator.py and saves it.
 
 Design notes:
-- Uses article-level sentiment (SentimentResult.entity_id IS NULL) — see the
-  note in app/sentiment/pipeline.py. A practical consequence: an article
-  mentioning two companies currently contributes the same sentiment to both,
-  even if the article was actually positive about one and negative about the
-  other. Worth flagging in the report; the fix is per-entity/sentence-level
-  sentiment, deferred as a future refinement.
+- Prefers entity-specific sentiment rows when available
+  (SentimentResult.entity_id == ArticleEntity.entity_id) and falls back to
+  article-level rows (entity_id is null) for backward compatibility.
 - Unlike ingestion/tagging, this does NOT check "already processed" — signals
   are an intentional time series. Every run produces a fresh snapshot for the
   current trailing window, which is what a "signal over time" chart on the
@@ -23,7 +20,8 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
+from sqlalchemy.orm import aliased
 
 from app import config
 from app.db import get_session
@@ -69,19 +67,35 @@ def _aggregate_all_entities(window_hours: int) -> tuple[int, int]:
     with get_session() as session:
         effective_time = func.coalesce(Article.published_at, Article.fetched_at)
 
+        entity_sentiment = aliased(SentimentResult)
+        article_sentiment = aliased(SentimentResult)
+
         rows = (
             session.query(
                 ArticleEntity.entity_id,
                 ArticleEntity.mention_count,
-                SentimentResult.sentiment_label,
-                SentimentResult.positive_score,
-                SentimentResult.negative_score,
+                func.coalesce(entity_sentiment.sentiment_label, article_sentiment.sentiment_label),
+                func.coalesce(entity_sentiment.positive_score, article_sentiment.positive_score),
+                func.coalesce(entity_sentiment.negative_score, article_sentiment.negative_score),
                 Article.recency_weight,
                 Article.source_credibility_score,
             )
             .join(Article, Article.article_id == ArticleEntity.article_id)
-            .join(SentimentResult, SentimentResult.article_id == Article.article_id)
-            .filter(SentimentResult.entity_id.is_(None))  # article-level sentiment only, for now
+            .outerjoin(
+                entity_sentiment,
+                and_(
+                    entity_sentiment.article_id == Article.article_id,
+                    entity_sentiment.entity_id == ArticleEntity.entity_id,
+                ),
+            )
+            .outerjoin(
+                article_sentiment,
+                and_(
+                    article_sentiment.article_id == Article.article_id,
+                    article_sentiment.entity_id.is_(None),
+                ),
+            )
+            .filter(or_(entity_sentiment.result_id.isnot(None), article_sentiment.result_id.isnot(None)))
             .filter(effective_time >= window_start)
             .all()
         )

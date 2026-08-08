@@ -8,6 +8,7 @@ the entities and thresholds that drive alert generation.
 import streamlit as st
 
 from app.services.dashboard_service import get_active_entities
+from app.session import get_session_id
 from app.services.watchlist_service import (
     WINDOW_SIZE_OPTIONS,
     add_watchlist_entry,
@@ -19,7 +20,7 @@ from app.services.watchlist_service import (
 st.set_page_config(page_title="Watchlist", page_icon="⭐", layout="wide")
 st.title("⭐ Watchlist Management")
 
-SESSION_ID = "demo-user"  # no login system yet — see README "Scope decisions"
+SESSION_ID = get_session_id()
 
 # --- Add Entity Form ---
 with st.expander("➕ Add Entity to Watchlist", expanded=False):

@@ -20,7 +20,9 @@ FinSightData-ML is a machine learning-powered financial analytics platform for i
 - **Visualization and UI:** Streamlit, Plotly
 - **External data access:** requests
 
-## Installation
+## Local development setup (supported path)
+
+Use Python 3.11 and the commands below as the canonical local workflow.
 
 1. Create and activate a virtual environment:
 
@@ -35,10 +37,10 @@ FinSightData-ML is a machine learning-powered financial analytics platform for i
    .venv\Scripts\activate
    ```
 
-2. Install project dependencies:
+2. Install project + test dependencies:
 
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
 
 3. Copy the example environment file and update it for your environment:
@@ -93,10 +95,10 @@ FinSightData-ML/
 
 ## Usage examples
 
-Initialize the database:
+Initialize/reset the database:
 
 ```bash
-python init_db.py
+python init_db.py --reset
 ```
 
 Seed baseline data:
@@ -107,12 +109,12 @@ python seed_model_versions.py
 python seed_watchlist.py
 ```
 
-Run the data pipeline stages:
+Run the data pipeline stages (offline-safe defaults):
 
 ```bash
 python run_ingestion.py
 python run_entity_tagging.py
-python run_sentiment.py
+python run_sentiment.py --backend auto
 python run_signals.py
 python run_alerts.py
 ```
@@ -123,13 +125,24 @@ Launch the dashboard:
 streamlit run app.py
 ```
 
+Run tests:
+
+```bash
+pytest -q
+```
+
+## Model and data prerequisites
+
+- `run_entity_tagging.py --tagger hybrid` attempts to load spaCy model `en_core_web_trf`; if unavailable, it falls back to rule-based tagging.
+- `run_sentiment.py --backend finbert` requires internet/model cache access for `ProsusAI/finbert`.
+- `run_sentiment.py --backend auto` falls back to a built-in lexicon analyzer when FinBERT cannot be loaded, allowing end-to-end local validation without external model downloads.
+- Live ingestion requires `NEWSAPI_KEY` and/or `ALPHAVANTAGE_KEY`; otherwise bundled sample responses are used.
+
 ## Development setup
 
-- Use `.env.example` as the starting point for local configuration
-- Keep generated databases, model artifacts, exports, and secrets out of version control
-- Recreate the virtual environment after dependency changes when needed
-- Install any required spaCy language model separately after `pip install -r requirements.txt`
-- Prefer working on focused branches and validating only the workflows affected by your change
+- Use `.env.example` as the starting point for local configuration.
+- Keep generated databases, model artifacts, exports, and secrets out of version control.
+- Validate changes with `pytest -q` and the documented CLI pipeline flow before opening a PR.
 
 ## Contributing
 
