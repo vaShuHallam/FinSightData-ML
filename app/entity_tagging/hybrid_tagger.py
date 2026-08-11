@@ -1,14 +1,16 @@
 """
-Hybrid entity tagger: spaCy for companies, rule-based regex for everything
-else (indices, sectors, commodities — categories spaCy's NER structurally
-can't recognize, since they're common nouns, not proper-noun named
-entities). See spacy_tagger.py's module docstring for the full reasoning.
+Hybrid entity tagger. Companies go through spaCy; everything else
+(indices, sectors, commodities) goes through rule-based regex. Reason
+being those are common nouns, not proper nouns, so they fall outside
+what spaCy's NER is built to recognize in the first place — it's not
+a matter of tuning it better. Full writeup's in spacy_tagger.py's
+module docstring.
 
-Merge policy when both taggers find the same entity: use the rule-based
-tagger's mention_count (exact regex counting is more precise for counting
-literal occurrences than spaCy's span count). Entities found ONLY by
-spaCy (company mentions the regex missed due to phrasing/context) are
-still included, using spaCy's count.
+When both taggers pick up the same entity, we go with the regex
+tagger's mention_count — plain regex counting is just more exact for
+literal occurrence counts than spaCy's span count. If spaCy catches a
+company the regex missed (usually down to phrasing), that entity
+still makes it in, using spaCy's count instead.
 """
 
 from app.entity_tagging.base import BaseEntityTagger, EntityMention

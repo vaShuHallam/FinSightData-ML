@@ -5,20 +5,22 @@ For every active watchlist entry, looks at that entity's most recent signal
 and fires an alert if it crosses the user's chosen threshold.
 
 Design notes:
-- signal_strength (computed during aggregation, using the global
-  SIGNAL_STRONG_THRESHOLD/MODERATE thresholds) and AlertType share the same
-  four non-neutral string values on purpose ("Strong Bullish", "Bullish",
-  "Bearish", "Strong Bearish") — the alert_type is just copied from the
-  signal's already-computed strength label. A signal_strength of "Neutral"
-  never produces an alert, regardless of the user's threshold.
+- signal_strength gets computed at aggregation time off the global
+  SIGNAL_STRONG_THRESHOLD/MODERATE thresholds, and it's deliberately built
+  to share the same four non-neutral values as AlertType ("Strong Bullish",
+  "Bullish", "Bearish", "Strong Bearish") — alert_type is just a straight
+  copy of whatever strength label the signal already has, no separate
+  mapping needed. Neutral signals never alert, no matter what threshold
+  the user picked.
 - The user's per-watchlist alert_threshold is a separate, personal gate:
   even if a signal is "Bullish" globally, it only becomes an alert for a
   specific user if abs(aggregate_sentiment_score) also clears their chosen
   threshold. Two different users watching the same entity can have
   different alert thresholds and get different alert behavior from the
   same underlying signal.
-- Idempotent per signal: won't create a second alert for a signal that
-  already has one, so re-running after no new signals exist is a no-op.
+- It's idempotent per signal — won't fire a second alert for a signal
+  that's already got one, so re-running the job when nothing new has
+  come in is just a no-op.
 """
 
 import logging
