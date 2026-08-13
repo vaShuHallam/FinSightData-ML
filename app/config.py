@@ -17,6 +17,16 @@ REDDIT_CLIENT_ID: str = os.getenv("REDDIT_CLIENT_ID", "")
 REDDIT_CLIENT_SECRET: str = os.getenv("REDDIT_CLIENT_SECRET", "")
 REDDIT_USER_AGENT: str = os.getenv("REDDIT_USER_AGENT", "finsight-ai/0.1")
 
+# --- Access control (NFR 4.2 REQ-5) ---
+# Settings page is restricted to project team members. A shared team
+# password is the pragmatic choice here — the BRD's ten-table schema has
+# no user-accounts table, and the team is small enough that per-user login
+# would be over-engineering. Stored as an environment secret, same pattern
+# as the API keys below. Deliberately no insecure default — if unset, the
+# Settings page shows a clear warning rather than silently blocking
+# everyone OR silently allowing a blank password to match a blank input.
+SETTINGS_PASSWORD: str = os.getenv("SETTINGS_PASSWORD", "")
+
 # --- Sentiment analysis (FinBERT) ---
 SENTIMENT_CONFIDENCE_THRESHOLD: float = float(os.getenv("SENTIMENT_CONFIDENCE_THRESHOLD", "0.6"))
 

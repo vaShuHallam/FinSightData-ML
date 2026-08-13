@@ -1,47 +1,28 @@
 """
 Alert-generation pipeline entry point.
 
-For every active watchlist entry, looks at that entity's most recent signal
-and fires an alert if it crosses the user's chosen threshold.
-
-Design notes:
-- signal_strength (computed during aggregation, using the global
-  SIGNAL_STRONG_THRESHOLD/MODERATE thresholds) and AlertType share the same
-  four non-neutral string values on purpose ("Strong Bullish", "Bullish",
-  "Bearish", "Strong Bearish") — the alert_type is just copied from the
-  signal's already-computed strength label. A signal_strength of "Neutral"
-  never produces an alert, regardless of the user's threshold.
-- The user's per-watchlist alert_threshold is a separate, personal gate:
-  even if a signal is "Bullish" globally, it only becomes an alert for a
-  specific user if abs(aggregate_sentiment_score) also clears their chosen
-  threshold. Two different users watching the same entity can have
-  different alert thresholds and get different alert behavior from the
-  same underlying signal.
-- Idempotent per signal: won't create a second alert for a signal that
-  already has one, so re-running after no new signals exist is a no-op.
+Now incorporates the lightweight relevance-learning layer
+(app/alerts/relevance_learning.py): each entity's historical feedback
+adjusts its effective alert threshold before checking whether the latest
+signal clears it.
 """
 
 import logging
 from datetime import datetime, timezone
 
+from app.alerts.relevance_learning import apply_adjustment, compute_adjustment
 from app.db import get_session
 from app.models import (
     Alert, Article, ArticleEntity, PipelineRun, PipelineRunType,
-    PipelineStatus, Signal, Watchlist,
+    PipelineStatus, Signal, UserFeedback, Watchlist,
 )
 
 logger = logging.getLogger(__name__)
 
-# signal_strength values that should never produce an alert.
 _NON_ALERTABLE_STRENGTHS = {"Neutral"}
 
 
 def run_alert_generation() -> dict:
-    """
-    Check every active watchlist entry against its entity's latest signal.
-
-    Returns a summary dict: {watchlist_checked, alerts_created}.
-    """
     run_id = _start_pipeline_run()
     checked = created = 0
     error_detail = None
@@ -55,10 +36,32 @@ def run_alert_generation() -> dict:
         error_detail = str(exc)
 
     _finish_pipeline_run(run_id, status, articles_processed=created, error_detail=error_detail)
-
     summary = {"watchlist_checked": checked, "alerts_created": created, "status": status.value}
     logger.info("Alert generation summary: %s", summary)
     return summary
+
+
+def _get_relevance_adjusted_threshold(session, entity_id: int, base_threshold: float) -> tuple[float, dict]:
+    """Returns (effective_threshold, debug_info) — debug_info is logged, not stored."""
+    scores = [
+        fb.relevance_score
+        for fb in session.query(UserFeedback)
+        .join(Alert, Alert.alert_id == UserFeedback.alert_id)
+        .filter(Alert.entity_id == entity_id)
+        .all()
+    ]
+
+    adjustment = compute_adjustment(scores, entity_id=entity_id)
+    effective = apply_adjustment(base_threshold, adjustment.threshold_adjustment)
+
+    debug_info = {
+        "feedback_count": adjustment.feedback_count,
+        "average_relevance": adjustment.average_relevance,
+        "adjustment": adjustment.threshold_adjustment,
+        "base_threshold": base_threshold,
+        "effective_threshold": effective,
+    }
+    return effective, debug_info
 
 
 def _check_all_watchlist_entries() -> tuple[int, int]:
@@ -76,13 +79,20 @@ def _check_all_watchlist_entries() -> tuple[int, int]:
                 .first()
             )
             if latest_signal is None:
-                continue  # no signal computed for this entity yet
-
+                continue
             if latest_signal.signal_strength in _NON_ALERTABLE_STRENGTHS:
                 continue
 
-            if abs(latest_signal.aggregate_sentiment_score) < entry.alert_threshold:
-                continue  # doesn't clear this user's personal threshold
+            effective_threshold, debug_info = _get_relevance_adjusted_threshold(
+                session, entry.entity_id, entry.alert_threshold
+            )
+            if debug_info["feedback_count"] >= 2:
+                logger.info("Entity %s: relevance-adjusted threshold %s -> %s (avg rating %s over %d ratings)",
+                           entry.entity_id, debug_info["base_threshold"], round(effective_threshold, 3),
+                           debug_info["average_relevance"], debug_info["feedback_count"])
+
+            if abs(latest_signal.aggregate_sentiment_score) < effective_threshold:
+                continue
 
             already_alerted = (
                 session.query(Alert)
@@ -91,29 +101,24 @@ def _check_all_watchlist_entries() -> tuple[int, int]:
                 .first()
             )
             if already_alerted is not None:
-                continue  # already have an alert for this exact signal
+                continue
 
             headline = _representative_headline(
                 session, entry.entity_id, latest_signal.window_start, latest_signal.window_end
             )
 
-            session.add(
-                Alert(
-                    entity_id=entry.entity_id,
-                    signal_id=latest_signal.signal_id,
-                    alert_type=latest_signal.signal_strength,
-                    trigger_headline=headline,
-                    threshold_value=entry.alert_threshold,
-                    triggered_value=latest_signal.aggregate_sentiment_score,
-                )
-            )
+            session.add(Alert(
+                entity_id=entry.entity_id, signal_id=latest_signal.signal_id,
+                alert_type=latest_signal.signal_strength, trigger_headline=headline,
+                threshold_value=entry.alert_threshold,  # the user's OWN chosen threshold, for transparency
+                triggered_value=latest_signal.aggregate_sentiment_score,
+            ))
             created += 1
 
     return checked, created
 
 
 def _representative_headline(session, entity_id: int, window_start, window_end) -> str | None:
-    """Most recent article headline mentioning this entity within the signal's window."""
     row = (
         session.query(Article.headline)
         .join(ArticleEntity, ArticleEntity.article_id == Article.article_id)
@@ -134,9 +139,7 @@ def _start_pipeline_run() -> int:
         return run.run_id
 
 
-def _finish_pipeline_run(
-    run_id: int, status: PipelineStatus, articles_processed: int, error_detail: str | None
-) -> None:
+def _finish_pipeline_run(run_id, status, articles_processed, error_detail):
     with get_session() as session:
         run = session.get(PipelineRun, run_id)
         run.status = status.value

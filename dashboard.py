@@ -2,11 +2,18 @@
 FinSight AI — main Dashboard page (REQ-2), the landing screen.
 
 Run with:
-    streamlit run app.py
+    streamlit run dashboard.py
 
 Other pages live in pages/ — Streamlit auto-generates the sidebar
 navigation from that folder (BRD's Navigation Sidebar requirement),
 ordered by each filename's numeric prefix.
+
+Every backend data call is wrapped in safe_page_load (NFR 4.1 REQ-4): on
+any failure, the user sees the BRD's exact required message instead of a
+stack trace, and the script halts at that point rather than rendering a
+broken half-page. Calls are wrapped individually rather than bundled into
+one big loader, since several depend on widget state (window_hours,
+selected_ids) that's only known after earlier widgets have rendered.
 """
 
 import pandas as pd
@@ -23,6 +30,7 @@ from app.services.dashboard_service import (
     get_unacknowledged_alert_count,
     get_watchlist_signals,
 )
+from app.streamlit_utils import safe_page_load
 
 st.set_page_config(page_title="FinSight AI — Dashboard", page_icon="📊", layout="wide")
 
@@ -70,7 +78,7 @@ def _load_entities():
 # --- Sidebar: entity filter, refresh, watchlist panel ---
 st.sidebar.title("FinSight AI")
 
-entities = _load_entities()
+entities = safe_page_load(_load_entities)
 entity_name_to_id = {e["name"]: e["entity_id"] for e in entities}
 selected_names = st.sidebar.multiselect("Filter by entity", options=list(entity_name_to_id.keys()))
 selected_ids = tuple(entity_name_to_id[n] for n in selected_names)
@@ -81,7 +89,7 @@ if st.sidebar.button("🔄 Refresh data"):
 
 st.sidebar.divider()
 st.sidebar.subheader("Your Watchlist")
-watchlist_rows = _load_watchlist_signals(SESSION_ID)
+watchlist_rows = safe_page_load(lambda: _load_watchlist_signals(SESSION_ID))
 if not watchlist_rows:
     st.sidebar.caption("No entities on your watchlist yet.")
 else:
@@ -93,13 +101,13 @@ else:
 
 
 # --- Active alerts banner ---
-alert_count = _load_alert_count()
+alert_count = safe_page_load(_load_alert_count)
 if alert_count > 0:
     st.warning(f"🔔 **{alert_count} unacknowledged alert{'s' if alert_count != 1 else ''}** — "
                f"see the Alert Centre page in the sidebar.")
 
 # --- Pipeline status indicator ---
-status = _load_pipeline_status()
+status = safe_page_load(_load_pipeline_status)
 if status:
     icon = "✅" if status["status"] == "completed" else "❌"
     st.caption(f"{icon} Last pipeline run: **{status['run_type']}** — "
@@ -115,7 +123,7 @@ window_label = st.radio("Aggregation window", options=list(WINDOW_LABEL_TO_HOURS
 window_hours = WINDOW_LABEL_TO_HOURS[window_label]
 
 # --- Signal summary cards ---
-summary = _load_summary(window_hours)
+summary = safe_page_load(lambda: _load_summary(window_hours))
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Total Signals", summary["total_signals"])
 c2.metric("Bullish", summary["bullish_signals"])
@@ -127,7 +135,7 @@ st.divider()
 
 # --- Sentiment timeline chart ---
 st.subheader("Sentiment Timeline")
-timeline = _load_timeline(selected_ids, window_hours)
+timeline = safe_page_load(lambda: _load_timeline(selected_ids, window_hours))
 if timeline:
     df = pd.DataFrame(timeline)
     fig = px.line(df, x="timestamp", y="score", color="entity", markers=True,
@@ -142,7 +150,7 @@ st.divider()
 
 # --- Top signals feed ---
 st.subheader("Top Signals")
-top_signals = _load_top_signals()
+top_signals = safe_page_load(_load_top_signals)
 if top_signals:
     df = pd.DataFrame(top_signals)
     df = df.rename(columns={
