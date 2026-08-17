@@ -91,17 +91,24 @@ else:
 
 # --- Signal distribution chart ---
 # Get the number of positive, negative and neutral articles for each day in the selected time range.
+# --- Signal distribution chart ---
 st.subheader("Signal Distribution (articles per day)")
 distribution = get_signal_distribution(selected_id, hours)
 if distribution:
-    # Convert the DataFrame from wide format into long format.
     df = pd.DataFrame(distribution).melt(
         id_vars="date", value_vars=["positive", "negative", "neutral"],
         var_name="Sentiment", value_name="Count",
     )
+    
+    # Each sentiment gets a distinct pattern fill in addition to colour, so the chart stays readable for colourblind users or when printed in greyscale.
     fig = px.bar(df, x="date", y="Count", color="Sentiment", barmode="stack",
-                color_discrete_map={"positive": "#2ecc71", "negative": "#e74c3c", "neutral": "#95a5a6"})
+                color_discrete_map={"positive": "#1a9850", "negative": "#d73027", "neutral": "#878787"},
+                pattern_shape="Sentiment",
+                pattern_shape_map={"positive": "", "negative": "x", "neutral": "."})
+    fig.update_layout(legend_title_text="Sentiment (colour + pattern)")
     st.plotly_chart(fig, width="stretch")
+    st.caption("Positive = solid green, Negative = red with ✕ pattern, "
+              "Neutral = grey with dot pattern — distinguishable without colour.")
 else:
     st.info("No articles in this time range yet.")
 
