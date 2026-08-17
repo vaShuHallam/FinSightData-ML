@@ -1,18 +1,12 @@
 """
 FinSight AI — main Dashboard page (REQ-2), the landing screen.
-
-Run with:
-    streamlit run app.py
-
-Other pages live in pages/ — Streamlit auto-generates the sidebar
-navigation from that folder (BRD's Navigation Sidebar requirement),
-ordered by each filename's numeric prefix.
 """
 
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
+#!import all functions from dashboard_service
 from app.services.dashboard_service import (
     WINDOW_LABEL_TO_HOURS,
     get_active_entities,
@@ -27,43 +21,50 @@ from app.services.dashboard_service import (
 st.set_page_config(page_title="FinSight AI — Dashboard", page_icon="📊", layout="wide")
 
 # No login system yet — every user shares this single demo session_id.
-# Documented simplification; see README "Scope decisions".
 SESSION_ID = "demo-user"
 
 
 # --- Data loading, cached briefly so widget interactions don't hammer the DB ---
+# 
 @st.cache_data(ttl=30)
 def _load_summary(hours: int):
+    # Load the sentiment summary for the selected time period.
     return get_signal_summary(hours=hours)
 
 
 @st.cache_data(ttl=30)
 def _load_timeline(entity_ids: tuple[int, ...], hours: int):
+    # Load sentiment signals for the selected entities and time period.
     return get_sentiment_timeline(entity_ids=list(entity_ids) or None, hours=hours)
 
 
 @st.cache_data(ttl=30)
 def _load_top_signals():
+    # Load the 20 strongest/latest signals for the dashboard.
     return get_top_signals(limit=20)
 
 
 @st.cache_data(ttl=30)
 def _load_watchlist_signals(session_id: str):
+     # Load the active watchlist signals for the current user/session.
     return get_watchlist_signals(session_id)
 
 
 @st.cache_data(ttl=30)
 def _load_alert_count():
+     # Load the number of unacknowledged alerts.
     return get_unacknowledged_alert_count()
 
 
 @st.cache_data(ttl=30)
 def _load_pipeline_status():
+    # Load the most recent pipeline run and its current status.
     return get_pipeline_status()
 
 
 @st.cache_data(ttl=300)
 def _load_entities():
+    # Load all active entities used by the entity-selection widgets.
     return get_active_entities()
 
 
