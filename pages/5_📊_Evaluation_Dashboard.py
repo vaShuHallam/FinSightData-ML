@@ -1,5 +1,5 @@
 """
-FinSight AI — Evaluation Dashboard page (REQ-8).
+FinSight AI — Evaluation Dashboard page .
 
 Reads v1 (and v2, once it exists) evaluation results produced by
 compute_gold_standard_metrics.py, and presents the full BRD-specified
@@ -13,35 +13,43 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from app.services.evaluation_service import (
-    build_comparison_table,
-    get_iteration_summary,
-    get_user_testing_results,
-    load_results,
+        build_comparison_table,
+        get_iteration_summary,
+        get_user_testing_results,
+        load_results,
 )
 
 st.set_page_config(page_title="Evaluation Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Evaluation Dashboard")
 
+# ---------------------------------------------------------
+#! LOAD EVALUATION DATA
 v1 = load_results("v1")
 v2 = load_results("v2")
+# Get feedback/user-testing metrics from the database
 user_testing = get_user_testing_results()
 
+# v1 is required because it is the baseline model
 if v1 is None:
     st.info("No v1 evaluation results found yet. Run compute_gold_standard_metrics.py first.")
     st.stop()
-
+# v2 is optional
 if v2 is None:
     st.caption("ℹ️ v2 results not found yet — showing v1 only. Once you run a v2 evaluation "
               "(`--version-label v2`), this page will automatically show the full comparison.")
 
-# --- Benchmark Information ---
+#! --- Benchmark Information ---
 st.subheader("Benchmark Information")
 b1, b2, b3 = st.columns(3)
+# Number of articles in the gold-standard dataset.
 b1.metric("Gold-standard size", v1.get("gold_standard_size", "—"))
+# How the gold-standard dataset was annotated
 b2.metric("Annotation method", v1.get("annotation_method", "—"))
+# Retrieve Cohen's kappa.
 kappa = v1.get("cohens_kappa")
 b3.metric("Cohen's kappa", f"{kappa:.3f}" if kappa is not None else "N/A (single annotator)")
 
+#! GOLD-STANDARD CLASS DISTRIBUTION
 if v1.get("class_distribution"):
     dist_df = pd.DataFrame(list(v1["class_distribution"].items()), columns=["Sentiment", "Count"])
     fig = px.bar(dist_df, x="Sentiment", y="Count", title="Gold-standard sentiment class distribution",
@@ -50,15 +58,17 @@ if v1.get("class_distribution"):
 
 st.divider()
 
-# --- Model Metrics Comparison Table ---
+#! --- Model Metrics Comparison Table ---
 st.subheader("Model Metrics Comparison")
 rows = build_comparison_table(v1, v2, user_testing)
 
+# Format an individual metric value
 def _fmt(val):
     if val is None:
         return "—"
     return f"{val:.3f}" if isinstance(val, float) else str(val)
 
+# Format the delta between v1 and v2
 def _fmt_delta(row):
     val = row["delta"]
     if val is None:
@@ -76,6 +86,7 @@ table_df = pd.DataFrame([
     for r in rows
 ])
 st.dataframe(table_df, width="stretch", hide_index=True)
+# Explain why some metrics don't have a v1/v2 delta
 st.caption("Signal Precision, Mean Relevance Rating, and Time to Signal are not tracked "
           "per model version in the current schema (user feedback is tied to alerts, not "
           "to a specific model version) — shown as a single current snapshot, delta N/A.")
@@ -86,6 +97,7 @@ st.divider()
 col1, col2 = st.columns(2)
 
 with col1:
+    # CONFUSION MATRIX + F1 SCORE
     st.subheader("Confusion Matrix (v1)")
     if v1.get("confusion_matrix"):
         labels = v1["confusion_matrix_labels"]
@@ -94,15 +106,18 @@ with col1:
             colorscale="Blues", text=v1["confusion_matrix"], texttemplate="%{text}",
         ))
         fig.update_layout(xaxis_title="Predicted", yaxis_title="Actual (gold)")
+         # Display the confusion matrix
         st.plotly_chart(fig, width="stretch")
     else:
         st.info("No confusion matrix data in v1 results.")
-
+# !F1 SCORE BY CLASS
 with col2:
     st.subheader("F1 Score by Class")
     class_f1_data = []
+    # Process each sentiment class.
     for label, key in [("Positive", "positive_f1"), ("Negative", "negative_f1"), ("Neutral", "neutral_f1")]:
         class_f1_data.append({"Class": label, "Version": "v1", "F1": v1.get(key, 0)})
+         # If v2 exists, add its F1 score as well
         if v2:
             class_f1_data.append({"Class": label, "Version": "v2", "F1": v2.get(key, 0)})
     fig = px.bar(pd.DataFrame(class_f1_data), x="Class", y="F1", color="Version", barmode="group")
@@ -111,20 +126,26 @@ with col2:
 
 st.divider()
 
-# --- User Testing Results ---
+#! --- User Testing Results ---
 st.subheader("User Testing Results")
 u1, u2, u3 = st.columns(3)
 mrr = user_testing["mean_relevance_rating"]
 sp = user_testing["signal_precision"]
 tts = user_testing["time_to_signal_minutes"]
+
+# Display mean relevance rating.
 u1.metric("Mean Relevance Rating", f"{mrr:.2f} / 5" if mrr is not None else "No ratings yet")
+
+# Display signal precision as a percentage
 u2.metric("Signal Precision", f"{sp:.1%}" if sp is not None else "No ratings yet")
+# Display average time to signal in minutes
 u3.metric("Time to Signal", f"{tts:.1f} min" if tts is not None else "No data yet")
+# Tell the user how many alerts have been rated.
 st.caption(f"Based on {user_testing['n_feedback']} rated alert(s) so far.")
 
 st.divider()
 
-# --- Abstention Rate ---
+#! --- Abstention Rate ---
 st.subheader("Abstention Rate")
 a1, a2 = st.columns(2)
 a1.metric("v1", f"{v1.get('abstention_rate', 0):.1%}")
@@ -132,6 +153,6 @@ a2.metric("v2", f"{v2.get('abstention_rate', 0):.1%}" if v2 else "—")
 
 st.divider()
 
-# --- Iteration Summary ---
+#! --- Iteration Summary ---
 st.subheader("Iteration Summary")
 st.markdown(get_iteration_summary())

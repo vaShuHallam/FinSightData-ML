@@ -1,12 +1,9 @@
 """
-FinSight AI — main Dashboard page (REQ-2), the landing screen.
+FinSight AI — main Dashboard page , the landing screen.
 
 Run with:
     streamlit run app.py
 
-Other pages live in pages/ — Streamlit auto-generates the sidebar
-navigation from that folder (BRD's Navigation Sidebar requirement),
-ordered by each filename's numeric prefix.
 """
 
 import pandas as pd
@@ -27,11 +24,10 @@ from app.services.dashboard_service import (
 st.set_page_config(page_title="FinSight AI — Dashboard", page_icon="📊", layout="wide")
 
 # No login system yet — every user shares this single demo session_id.
-# Documented simplification; see README "Scope decisions".
 SESSION_ID = "demo-user"
 
 
-# --- Data loading, cached briefly so widget interactions don't hammer the DB ---
+#! --- Data loading, cached briefly so widget interactions don't hammer the DB ---
 @st.cache_data(ttl=30)
 def _load_summary(hours: int):
     return get_signal_summary(hours=hours)
@@ -67,7 +63,7 @@ def _load_entities():
     return get_active_entities()
 
 
-# --- Sidebar: entity filter, refresh, watchlist panel ---
+#! --- Sidebar: entity filter, refresh, watchlist panel ---
 st.sidebar.title("FinSight AI")
 
 entities = _load_entities()
@@ -92,13 +88,13 @@ else:
         st.sidebar.markdown(f"**{row['entity']}** — {strength} ({score_str})")
 
 
-# --- Active alerts banner ---
+# !--- Active alerts banner ---
 alert_count = _load_alert_count()
 if alert_count > 0:
     st.warning(f"🔔 **{alert_count} unacknowledged alert{'s' if alert_count != 1 else ''}** — "
                f"see the Alert Centre page in the sidebar.")
 
-# --- Pipeline status indicator ---
+#! --- Pipeline status indicator ---
 status = _load_pipeline_status()
 if status:
     icon = "✅" if status["status"] == "completed" else "❌"
@@ -109,12 +105,12 @@ else:
 
 st.title("📊 Dashboard")
 
-# --- Time window selector ---
+# !--- Time window selector ---
 window_label = st.radio("Aggregation window", options=list(WINDOW_LABEL_TO_HOURS.keys()),
                         index=2, horizontal=True)
 window_hours = WINDOW_LABEL_TO_HOURS[window_label]
 
-# --- Signal summary cards ---
+#! --- Signal summary cards ---
 summary = _load_summary(window_hours)
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Total Signals", summary["total_signals"])
@@ -125,7 +121,7 @@ c5.metric("Articles Processed", summary["articles_processed"])
 
 st.divider()
 
-# --- Sentiment timeline chart ---
+#! --- Sentiment timeline chart ---
 st.subheader("Sentiment Timeline")
 timeline = _load_timeline(selected_ids, window_hours)
 if timeline:
@@ -140,7 +136,7 @@ else:
 
 st.divider()
 
-# --- Top signals feed ---
+# !--- Top signals feed ---
 st.subheader("Top Signals")
 top_signals = _load_top_signals()
 if top_signals:

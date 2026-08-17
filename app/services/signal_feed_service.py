@@ -28,10 +28,7 @@ def get_all_signals(
     date_to: date | None = None,
     sort_by: str = "Signal Strength",
 ) -> list[dict]:
-    """
-    Stands in for: GET /api/v1/signals (with filtering/sorting applied
-    server-side).
-    """
+
     with get_session() as session:
         
         # Query the entity name, entity type, and complete Signal object.
@@ -115,8 +112,6 @@ def get_signal_detail(signal_id: int) -> dict | None:
 
 def get_contributing_articles(entity_id: int, window_start: datetime, window_end: datetime) -> list[dict]:
     """
-    Stands in for: GET /api/v1/articles?signal_id=
-
     Articles that mention this entity within the signal's window, with
     their individual sentiment label and confidence — for the Contributing
     Articles table in the Signal Detail View.

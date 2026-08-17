@@ -13,8 +13,6 @@ WINDOW_LABEL_TO_HOURS = {"6h": 6, "12h": 12, "24h": 24, "7 days": 24 * 7}
 
 def get_signal_summary(hours: int = 24) -> dict:
     """
-    Stands in for: GET /api/v1/signals/summary
-
     Returns counts for the BRD's Signal Summary Cards: total signals,
     bullish/bearish/neutral breakdown, and articles processed — all within
     the trailing `hours` window.
@@ -45,8 +43,6 @@ def get_signal_summary(hours: int = 24) -> dict:
 
 def get_sentiment_timeline(entity_ids: list[int] | None = None, hours: int = 24) -> list[dict]:
     """
-    Stands in for: GET /api/v1/signals?entity_id=&window=
-
     Returns every signal in the trailing `hours` window (optionally filtered
     to specific entities), shaped for a line chart: one row per
     entity/timestamp with its aggregate_sentiment_score.
@@ -71,11 +67,7 @@ def get_sentiment_timeline(entity_ids: list[int] | None = None, hours: int = 24)
 
 def get_top_signals(limit: int = 20) -> list[dict]:
     """
-    Stands in for: GET /api/v1/signals?sort=strength&limit=20
-
     Returns the most recent signals, ranked by |aggregate_sentiment_score|
-    (i.e. strongest moves first, matching "highest-strength" in the BRD),
-    for the Top Signals Feed table.
     """
     with get_session() as session:
         rows = (
@@ -99,9 +91,6 @@ def get_top_signals(limit: int = 20) -> list[dict]:
 
 def get_watchlist_signals(session_id: str) -> list[dict]:
     """
-    Stands in for: GET /api/v1/watchlist?session_id= then
-    GET /api/v1/signals?entity_id= (BRD combines these into one panel).
-
     Returns each watchlisted entity's most recent signal, for the sidebar
     Watchlist Panel.
     """
@@ -131,8 +120,7 @@ def get_watchlist_signals(session_id: str) -> list[dict]:
 
 
 def get_unacknowledged_alert_count() -> int:
-    """Stands in for: GET /api/v1/alerts?is_acknowledged=false&count=true
-    To get  "unacknowledged alerts" warning banner"""
+    """ To get  "unacknowledged alerts" warning banner"""
     with get_session() as session:
         return (
             session.query(func.count(Alert.alert_id))
@@ -143,8 +131,6 @@ def get_unacknowledged_alert_count() -> int:
 
 def get_pipeline_status() -> dict | None:
     """
-    Stands in for: GET /api/v1/pipeline/status
-
     Returns the most recent pipeline run of any type, for the Pipeline
     Status Indicator. None if no pipeline has ever run.
     """
@@ -161,7 +147,7 @@ def get_pipeline_status() -> dict | None:
 
 
 def get_active_entities() -> list[dict]:
-    """Stands in for: GET /api/v1/entities (used to populate the Entity Filter dropdown)."""
+    """used to populate the Entity Filter dropdown."""
     with get_session() as session:
         rows = (
             session.query(Entity.entity_id, Entity.name)

@@ -13,7 +13,7 @@ STATUS_OPTIONS = ["All", "Active", "Acknowledged"]
 
 
 def get_active_alerts() -> list[dict]:
-    """Stands in for: GET /api/v1/alerts?is_acknowledged=false — newest first."""
+    """ Get all active alerts."""
     with get_session() as session:
         rows = (
             session.query(Alert, Entity.name)
@@ -33,7 +33,7 @@ def get_all_alerts(
     date_to: date | None = None,
     status: str = "All",
 ) -> list[dict]:
-    """Stands in for: GET /api/v1/alerts (with REQ-5's filter panel applied)."""
+    #!get all alerts
     with get_session() as session:
         query = session.query(Alert, Entity.name).join(Entity, Entity.entity_id == Alert.entity_id)
 
@@ -77,8 +77,7 @@ def _alert_to_dict(alert: Alert, entity_name: str) -> dict:
 
 
 def acknowledge_alert(alert_id: int) -> bool:
-    """Stands in for: PUT /api/v1/alerts/{alert_id}/acknowledge
-    Marks one alert as acknowledged"""
+    """ Marks one alert as acknowledged"""
     with get_session() as session:
          # Find the alert using its primary key.
         alert = session.get(Alert, alert_id)
@@ -93,8 +92,7 @@ def acknowledge_alert(alert_id: int) -> bool:
 
 
 def acknowledge_all_active() -> int:
-    """Stands in for: PUT /api/v1/alerts/acknowledge-all. Returns count acknowledged
-     Marks every currently active alert as acknowledged and returns the number of alerts updated.."""
+    """ Returns count acknowledged .Marks every currently active alert as acknowledged and returns the number of alerts updated.."""
     from datetime import datetime as _dt, timezone as _tz
     # Get the current UTC time once so all alerts receive the same acknowledgement timestamp.
     now = _dt.now(_tz.utc)
@@ -129,7 +127,6 @@ def get_signal_for_alert(signal_id: int) -> dict | None:
 
 def save_relevance_rating(alert_id: int, relevance_score: int) -> tuple[bool, str]:
     """
-    Stands in for: POST /api/v1/feedback
     Saves or updates the user's star rating for an alert.
     If a rating already exists, it is updated instead of creating
     another feedback row

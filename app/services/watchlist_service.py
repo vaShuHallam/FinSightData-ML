@@ -1,47 +1,45 @@
 """
-Watchlist Management data-access service (REQ-3).
+Watchlist Management data-access service .
 
-Same design decision as the other services: internal equivalents of the
-BRD's REST endpoints, called directly by Streamlit.
+Handles all database operations for the user's watchlist:
+viewing, adding, updating alert thresholds, and removing entities.
 """
 
-from app.db import get_session
-from app.models import Entity, Watchlist
+from app.db  import get_session
+from app.models import Entity,  Watchlist
 
+# Available signal window sizes that the user can choose from.
 WINDOW_SIZE_OPTIONS = [6, 12, 24]
+# Default alert threshold used when a new watchlist entry is created
 DEFAULT_ALERT_THRESHOLD = 0.60
 
-
-def get_watchlist(session_id: str) -> list[dict]:
-    """Stands in for: GET /api/v1/watchlist?session_id="""
-    with get_session() as session:
+def get_watchlist(session_id: str) ->  list[dict]: 
+    """  Get all active watchlist entries belonging to the current session/user"""
+    with  get_session() as session:
         rows = (
-            session.query(Watchlist, Entity.name)
-            .join(Entity, Entity.entity_id == Watchlist.entity_id)
-            .filter(Watchlist.session_id == session_id, Watchlist.is_active.is_(True))
-            .order_by(Entity.name)
-            .all()
+             session.query(Watchlist, Entity.name)
+             .join(Entity, Entity.entity_id == Watchlist.entity_id)
+             .filter(Watchlist.session_id == session_id, Watchlist.is_active.is_(True))
+             .order_by(Entity.name)
+             .all()
         )
         return [
             {
-                "watchlist_id": w.watchlist_id,
-                "entity_id": w.entity_id,
-                "entity_name": name,
-                "alert_threshold": w.alert_threshold,
-                "window_size_hours": w.window_size_hours,
+               "watchlist_id": w.watchlist_id,
+               "entity_id": w.entity_id,
+               "entity_name": name,
+               "alert_threshold": w.alert_threshold,
+               "window_size_hours": w.window_size_hours,
             }
             for w, name in rows
         ]
 
 
 def add_watchlist_entry(
-    entity_id: int, session_id: str, alert_threshold: float, window_size_hours: int
+      entity_id: int, session_id: str, alert_threshold: float, window_size_hours: int
 ) -> tuple[bool, str]:
     """
-    Stands in for: POST /api/v1/watchlist
-
-    Returns (success, message) using the BRD's exact three status-alert
-    strings: success, already-exists, or a generic save failure.
+        Add an entity to the user's watchlist
     """
     try:
         with get_session() as session:
@@ -65,20 +63,20 @@ def add_watchlist_entry(
 
 
 def update_alert_threshold(watchlist_id: int, new_threshold: float) -> bool:
-    """Stands in for: PUT /api/v1/watchlist/{watchlist_id} (threshold-only update)."""
+    """  Update the alert threshold of an existing watchlist entry."""
     try:
         with get_session() as session:
-            entry = session.get(Watchlist, watchlist_id)
+            entry = session.get(Watchlist , watchlist_id)
             if entry is None:
                 return False
             entry.alert_threshold = new_threshold
         return True
     except Exception:
-        return False
+        return  False
 
 
 def remove_watchlist_entry(watchlist_id: int) -> bool:
-    """Stands in for: DELETE /api/v1/watchlist/{watchlist_id}"""
+    """ Remove a watchlist entry using its watchlist ID."""
     try:
         with get_session() as session:
             entry = session.get(Watchlist, watchlist_id)

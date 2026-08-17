@@ -7,11 +7,6 @@ FinBERT, tags which company/sector each article concerns, aggregates scores
 into per-entity signals, and raises threshold-based alerts — all surfaced
 through an 8-page Streamlit dashboard.
 
-## My Role — Frontend / Deploy (Victor Adeyemi)
-
-Responsible for the Streamlit dashboard (all 8 pages), service-layer/UI
-integration, caching strategy, deployment configuration, and end-to-end
-pipeline validation.
 
 ## Project layout
 
@@ -76,8 +71,7 @@ prediction after that runs locally with no further network dependency.
 
 ## SQLite (dev) → Postgres (prod)
 
-The only thing that changes is `DATABASE_URL`. Set it in `.env` (or as a real
-environment secret in deployment):
+The only thing that changes is `DATABASE_URL`. Set it in `.env`:
 
 ```bash
 # Local development (default — no setup needed)
@@ -100,12 +94,10 @@ with get_session() as session:
     session.add(Entity(name="Barclays PLC", ticker_symbol="BARC",
                         entity_type=EntityType.COMPANY.value, sector="Finance",
                         exchange="LSE"))
-    # commit is automatic on clean exit; rollback on exception
+    # commit is automatic on clean exit
 ```
 
-The `str` enums in `models.py` (`SentimentLabel`, `EntityType`, `SignalStrength`,
-etc.) are the source of truth for the allowed categorical values — use them in
-application code rather than raw strings to avoid typos. Store `.value`.
+
 
 ## Evaluation
 

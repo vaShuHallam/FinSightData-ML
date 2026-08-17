@@ -22,8 +22,6 @@ def get_articles(
     date_to: date | None = None,
 ) -> list[dict]:
     """
-    Stands in for: GET /api/v1/articles?q=
-
     Returns articles for the Article List, each with its sentiment label
     badge, newest first.
     """
