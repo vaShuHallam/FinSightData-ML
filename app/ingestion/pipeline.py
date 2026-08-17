@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 
 from app.db import get_session
 from app.ingestion.base import BaseFetcher, RawArticle
+from app.ingestion.validation import filter_valid_articles
 from app.ingestion.preprocess import (
     compute_content_hash,
     compute_recency_weight,
@@ -23,20 +24,23 @@ logger = logging.getLogger(__name__)
 
 def run_ingestion(fetcher: BaseFetcher, query: str, max_results: int = 20) -> dict:
     """
-    Fetch articles for `query` via `fetcher`, preprocess, and save new ones.
+    Fetch articles for `query` via `fetcher`, validate, preprocess, and save new ones.
 
-    Returns a summary dict: {fetched, saved, duplicates}. Also writes a
+    Returns a summary dict: {fetched, saved, duplicates, invalid}. Also writes a
     pipeline_runs row so ingestion history is auditable from the dashboard,
     per REQ for the pipeline_runs table.
     """
     run_id = _start_pipeline_run()
-    fetched = saved = duplicates = 0
+    fetched = saved = duplicates = invalid = 0
     error_detail = None
 
     try:
         raw_articles = fetcher.fetch(query=query, max_results=max_results)
         fetched = len(raw_articles)
-        saved, duplicates = _save_articles(raw_articles)
+        valid_articles, invalid, invalid_reasons = filter_valid_articles(raw_articles)
+        if invalid:
+            logger.warning("Skipped %d invalid article(s): %s", invalid, invalid_reasons)
+        saved, duplicates = _save_articles(valid_articles)
         status = PipelineStatus.COMPLETED
     except Exception as exc:  # keep ingestion resilient; log and record the failure
         logger.exception("Ingestion run failed")
@@ -45,7 +49,7 @@ def run_ingestion(fetcher: BaseFetcher, query: str, max_results: int = 20) -> di
 
     _finish_pipeline_run(run_id, status, articles_processed=saved, error_detail=error_detail)
 
-    summary = {"fetched": fetched, "saved": saved, "duplicates": duplicates, "status": status.value}
+    summary = {"fetched": fetched, "saved": saved, "duplicates": duplicates, "invalid": invalid, "status": status.value}
     logger.info("Ingestion summary: %s", summary)
     return summary
 
