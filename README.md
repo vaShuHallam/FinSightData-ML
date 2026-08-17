@@ -5,13 +5,8 @@ Real-time financial news sentiment analyser & market signal dashboard.
 The system ingests live financial news, classifies sentiment per article using
 FinBERT, tags which company/sector each article concerns, aggregates scores
 into per-entity signals, and raises threshold-based alerts — all surfaced
-through an 8-page Streamlit dashboard.
+through an 8-page Streamlit dashboard
 
-## My Role — Frontend / Deploy (Victor Adeyemi)
-
-Responsible for the Streamlit dashboard (all 8 pages), service-layer/UI
-integration, caching strategy, deployment configuration, and end-to-end
-pipeline validation.
 
 ## Project layout
 
