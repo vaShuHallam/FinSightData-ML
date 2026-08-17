@@ -5,6 +5,7 @@ FinSight AI — Settings / Pipeline Configuration page (REQ-9).
 import pandas as pd
 import streamlit as st
 
+from app import config
 from app.services.settings_service import (
     ENTITY_TYPE_OPTIONS,
     SECTOR_OPTIONS,
@@ -21,6 +22,34 @@ from app.services.settings_service import (
 )
 
 st.set_page_config(page_title="Settings", page_icon="⚙️", layout="wide")
+
+# --- Access control (NFR 4.2 REQ-5) ---
+# This page is restricted to project team members. Nothing below this
+# block renders until authenticated — st.stop() halts the script here,
+# so pipeline controls and entity management are never sent to the
+# browser for an unauthenticated visitor, not just hidden/disabled.
+if not st.session_state.get("settings_authenticated", False):
+    st.title("⚙️ Settings / Pipeline Configuration")
+    st.info("This page is restricted to project team members.")
+
+    if not config.SETTINGS_PASSWORD:
+        st.warning("SETTINGS_PASSWORD is not set in .env — this page is currently "
+                  "unprotected. Set SETTINGS_PASSWORD to enable access control.")
+
+    password = st.text_input("Team password", type="password")
+    if st.button("Log in"):
+        if config.SETTINGS_PASSWORD and password == config.SETTINGS_PASSWORD:
+            st.session_state.settings_authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect password.")
+    st.stop()
+
+# --- Authenticated from here on ---
+if st.button("🚪 Log out"):
+    st.session_state.settings_authenticated = False
+    st.rerun()
+
 st.title("⚙️ Settings / Pipeline Configuration")
 
 # --- Pipeline Status ---
