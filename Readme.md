@@ -7,6 +7,11 @@ FinBERT, tags which company/sector each article concerns, aggregates scores
 into per-entity signals, and raises threshold-based alerts — all surfaced
 through an 8-page Streamlit dashboard.
 
+## My Role — Frontend / Deploy (Victor Adeyemi)
+
+Responsible for the Streamlit dashboard (all 8 pages), service-layer/UI
+integration, caching strategy, deployment configuration, and end-to-end
+pipeline validation.
 
 ## Project layout
 
@@ -26,7 +31,8 @@ finsight-ai/
 ├── pages/                      # 7 additional Streamlit pages (Signal Feed, Alert
 │                                  # Centre, Entity Explorer, Article Inspector,
 │                                  # Evaluation Dashboard, Watchlist, Settings)
-├── app.py                       # main Dashboard page — run with `streamlit run app.py`
+├── dashboard.py                 # main Dashboard page — run with `streamlit run dashboard.py`
+│                                  # (renamed from app.py)
 ├── run_ingestion.py              # pipeline stage 1: fetch news
 ├── run_sentiment.py               # pipeline stage 2: FinBERT scoring
 ├── run_entity_tagging.py           # pipeline stage 3: tag entities
@@ -61,7 +67,7 @@ python run_entity_tagging.py         # 5. tag entities
 python run_signals.py                # 6. aggregate signals
 python run_alerts.py                 # 7. generate alerts
 
-streamlit run app.py                 # 8. launch the dashboard
+streamlit run dashboard.py            # 8. launch the dashboard
 ```
 
 No manual model download is required — `run_sentiment.py` downloads and caches
@@ -120,6 +126,8 @@ targeted improvements to produce a v1-vs-v2 comparison.
   **Alembic** so production schema changes are versioned.
 - **Scores as Float:** BRD "Decimal (0.0–1.0)" fields are stored as `Float`
   (double precision) — see the note at the top of `models.py`.
+- **`.env` is not tracked in git** — each team member keeps their own local
+  copy (from `.env.example`) with their own API keys. Do not commit `.env`.
 - **Known limitation:** the current rule-based entity tagger favours precision
   over recall (~0.98 vs ~0.20) since spaCy's NER model could not be downloaded
   in the original build environment (blocked network policy). A hybrid
