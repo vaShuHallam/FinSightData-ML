@@ -12,6 +12,7 @@ import plotly.express as px
 import streamlit as st
 
 from app.services.dashboard_service import get_active_entities
+# Import the data-access functions used by the Entity Explorer page
 from app.services.entity_explorer_service import (
     TIME_RANGE_TO_HOURS,
     add_to_watchlist,
@@ -28,16 +29,20 @@ st.title("🔍 Entity Explorer")
 SESSION_ID = "demo-user"  # no login system yet — see README "Scope decisions"
 
 entities = get_active_entities()
+
+# Stop the page if there are no entities to display
 if not entities:
     st.info("No entities found. Run seed_entities.py first.")
     st.stop()
 
 entity_names = [e["name"] for e in entities]
+# Display the entity names in a dropdown.
 selected_name = st.selectbox("Select Entity", options=entity_names)
 selected_id = next(e["entity_id"] for e in entities if e["name"] == selected_name)
 
 col1, col2, col3 = st.columns(3)
 with col1:
+    # Let the user choose how far back they want to view data
     time_range = st.radio("Time range", options=list(TIME_RANGE_TO_HOURS.keys()), index=1)
     hours = TIME_RANGE_TO_HOURS[time_range]
 with col2:
@@ -46,37 +51,50 @@ with col2:
 with col3:
     st.write("")  # vertical alignment spacer
     st.write("")
+    
+    # Add the currently selected entity to the user's watchlist.
     if st.button("⭐ Add to Watchlist"):
         success, message = add_to_watchlist(selected_id, SESSION_ID)
         (st.success if success else st.error)(message)
 
 # --- Entity metadata card ---
+
+# Retrieve information about the selected entity .This also checks whether the entity is already on this user's watchlist.
 metadata = get_entity_metadata(selected_id, SESSION_ID)
 if metadata:
     m1, m2, m3, m4 = st.columns(4)
+    #display type
     m1.metric("Type", metadata["entity_type"])
+    #display sector
     m2.metric("Sector", metadata["sector"] or "—")
+    #display ticker symbol
     m3.metric("Ticker", metadata["ticker_symbol"] or "—")
+    # Tell the user whether this entity is currently on their watchlist.
     m4.metric("On Your Watchlist", "Yes" if metadata["is_on_watchlist"] else "No")
 
 st.divider()
 
 # --- Sentiment history chart ---
+# Retrieve sentiment signals for the selected entity.
 st.subheader("Sentiment History")
 history = get_sentiment_history(selected_id, hours, window_size_hours)
 if history:
     df = pd.DataFrame(history)
+    # Create a line chart.
     fig = px.line(df, x="timestamp", y="score", markers=True,
                  labels={"score": "Aggregate Sentiment Score", "timestamp": "Time"})
+     # Sentiment scores are expected to be between -1 and +1
     fig.update_layout(yaxis_range=[-1, 1])
     st.plotly_chart(fig, width="stretch")
 else:
     st.info("No signals in this time range yet.")
 
 # --- Signal distribution chart ---
+# Get the number of positive, negative and neutral articles for each day in the selected time range.
 st.subheader("Signal Distribution (articles per day)")
 distribution = get_signal_distribution(selected_id, hours)
 if distribution:
+    # Convert the DataFrame from wide format into long format.
     df = pd.DataFrame(distribution).melt(
         id_vars="date", value_vars=["positive", "negative", "neutral"],
         var_name="Sentiment", value_name="Count",
@@ -91,6 +109,8 @@ st.divider()
 
 # --- Recent articles table ---
 st.subheader("Recent Articles")
+
+# Retrieve the 20 most recent articles mentioning this entity.
 articles = get_recent_articles(selected_id, limit=20)
 if articles:
     df = pd.DataFrame(articles).rename(columns={
@@ -103,6 +123,7 @@ else:
 
 # --- Signal history table ---
 st.subheader("Signal History")
+# Retrieve every signal ever generated for this entity
 signal_history = get_signal_history(selected_id)
 if signal_history:
     df = pd.DataFrame(signal_history).rename(columns={

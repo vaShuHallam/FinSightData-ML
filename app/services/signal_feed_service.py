@@ -1,9 +1,8 @@
 """
-Signal Feed data-access service (REQ-4).
+Signal Feed data-access service.
 
 Same design decision as dashboard_service.py: these functions are the
-internal equivalent of the BRD's REST endpoints (GET /api/v1/signals, etc.),
-called directly by Streamlit instead of over HTTP.
+internal equivalent of the BRD's REST endpoints (GET /api/v1/signals, etc.)
 """
 
 from datetime import date, datetime, time, timezone
@@ -13,11 +12,13 @@ from sqlalchemy import func
 from app.db import get_session
 from app.models import Article, ArticleEntity, Entity, SentimentResult, Signal
 
+
+
+# Options used by the Signal Feed filters and sorting controls.
 SORT_OPTIONS = ["Signal Strength", "Date", "Entity Name", "Article Count"]
 STRENGTH_OPTIONS = ["Strong Bullish", "Bullish", "Neutral", "Bearish", "Strong Bearish"]
 ENTITY_TYPE_OPTIONS = ["Company", "Index", "Sector", "Commodity"]
-
-
+  
 def get_all_signals(
     search: str = "",
     strengths: list[str] | None = None,
@@ -29,22 +30,28 @@ def get_all_signals(
 ) -> list[dict]:
     """
     Stands in for: GET /api/v1/signals (with filtering/sorting applied
-    server-side, per REQ-4's Search/Filter/Sort features).
+    server-side).
     """
     with get_session() as session:
+        
+        # Query the entity name, entity type, and complete Signal object.
+        # The JOIN connects each signal to its corresponding entity.
         query = (
             session.query(Entity.name, Entity.entity_type, Signal)
             .join(Signal, Signal.entity_id == Entity.entity_id)
         )
-
+        # Filter by entity name if the user entered a search term.
         if search:
             query = query.filter(Entity.name.ilike(f"%{search}%"))
+        # Filter by selected signal strengths.
         if strengths:
             query = query.filter(Signal.signal_strength.in_(strengths))
+        # Filter by selected entity types.
         if entity_types:
             query = query.filter(Entity.entity_type.in_(entity_types))
         if window_hours:
             query = query.filter(Signal.window_size_hours == window_hours)
+        # Include signals from the selected starting date onwards.
         if date_from:
             query = query.filter(Signal.window_end >= datetime.combine(date_from, time.min))
         if date_to:
@@ -67,7 +74,7 @@ def get_all_signals(
         }
         for name, etype, sig in rows
     ]
-
+    # Sort the results according to the option selected by the user.
     if sort_by == "Signal Strength":
         results.sort(key=lambda r: abs(r["aggregate_score"]), reverse=True)
     elif sort_by == "Date":
@@ -89,6 +96,7 @@ def get_signal_detail(signal_id: int) -> dict | None:
             .filter(Signal.signal_id == signal_id)
             .first()
         )
+        # If no signal was found, return None.
         if row is None:
             return None
         name, entity_id, sig = row
@@ -114,6 +122,7 @@ def get_contributing_articles(entity_id: int, window_start: datetime, window_end
     Articles table in the Signal Detail View.
     """
     with get_session() as session:
+         # Retrieve articles linked to the selected entity. Join ArticleEntity to connect articles with entities, and SentimentResult to obtain the article sentiment.
         rows = (
             session.query(Article.article_id, Article.headline,
                          SentimentResult.sentiment_label, SentimentResult.confidence_score)

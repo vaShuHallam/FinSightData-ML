@@ -24,76 +24,94 @@ from app.services.dashboard_service import get_active_entities
 st.set_page_config(page_title="Alert Centre", page_icon="🔔", layout="wide")
 st.title("🔔 Alert Centre")
 
-# A message set just before st.rerun() never actually reaches the browser,
-# since the rerun happens before that frame renders — carry it across the
-# rerun via session_state instead, and show/clear it here at the top.
+# A message set just before st.rerun() never actually reaches the browser, since the rerun happens before that frame renders — carry it across the rerun via session_state instead, and show/clear it here at the top.
 if st.session_state.get("flash_message"):
     st.success(st.session_state.flash_message)
     st.session_state.flash_message = None
 
-# --- Active Alerts ---
+#! --- Active Alerts ---
 st.subheader("Active Alerts")
+# Retrieve all currently active alerts from the service layer.
 active_alerts = get_active_alerts()
 
 if not active_alerts:
+    # Display a message when there are no active alerts.
     st.info("No active alerts right now.")
 else:
+    # Allow the user to acknowledge every active alert at once.
     if st.button(f"✅ Acknowledge All ({len(active_alerts)})"):
         count = acknowledge_all_active()
         st.session_state.flash_message = f"Acknowledged {count} alert(s)."
+        # Rerun the page so the acknowledged alerts disappear
         st.rerun()
-
+     # Display each active alert as an individual interactive container.
     for alert in active_alerts:
         with st.container(border=True):
+             # Divide the main alert information into three columns.
             c1, c2, c3 = st.columns([3, 2, 2])
+            # Display the entity and type of alert.
             c1.markdown(f"**{alert['entity_name']}** — {alert['alert_type']}")
+            # Display the score that triggered the alert and its threshold.
             c2.write(f"Score: {alert['aggregate_score']:+.3f} (threshold {alert['threshold']:.2f})")
+              # Display when the alert was created.
             c3.caption(f"Created: {alert['created_at']}")
 
             st.caption(f"📰 {alert['trigger_headline'] or '(no headline recorded)'}")
-
+            # Three columns are used for:1. Relevance rating 2. Acknowledge button 3. View Signal
             r1, r2, r3 = st.columns([2, 1, 1])
             with r1:
                 existing = get_existing_rating(alert["alert_id"])
+                 # Display a 1–5 star rating control.
                 rating = st.select_slider(
                     "Rate relevance", options=[1, 2, 3, 4, 5],
                     value=existing or 3, format_func=lambda x: "⭐" * x,
                     key=f"rate_{alert['alert_id']}", label_visibility="collapsed",
                 )
+                 #Only show the Submit button when- the user has changed the rating, or- no previous rating exists.
                 if rating != (existing or 3) or existing is None:
                     if st.button("Submit rating", key=f"submit_rate_{alert['alert_id']}"):
                         success, message = save_relevance_rating(alert["alert_id"], rating)
                         (st.success if success else st.error)(message)
             with r2:
+                # Mark this alert as acknowledged in the database.
                 if st.button("Acknowledge", key=f"ack_{alert['alert_id']}"):
                     acknowledge_alert(alert["alert_id"])
                     st.rerun()
             with r3:
+                
+                # Expand this section to display the signal that caused the alert.
                 with st.expander("View Signal"):
                     signal = get_signal_for_alert(alert["signal_id"])
                     if signal:
+                        # Display the signal strength and aggregate score.
                         st.write(f"**{signal['signal_strength']}** — score {signal['aggregate_score']:+.3f}")
+                              # Display the number of articles contributing to the signal and the sentiment breakdown.
                         st.write(f"{signal['article_count']} articles "
                                 f"({signal['positive_count']} pos / {signal['negative_count']} neg / "
                                 f"{signal['neutral_count']} neu)")
+                        # Display the time window used to calculate the signal.
                         st.caption(f"Window: {signal['window_start']} → {signal['window_end']}")
                     else:
                         st.caption("Signal not found.")
 
 st.divider()
 
-# --- All Alerts (filterable history) ---
+#! --- All Alerts (filterable history) ---
+# This section displays both active and acknowledged alerts.
 st.subheader("All Alerts")
 
 search = st.text_input("Search by entity name", placeholder="e.g. Apple")
-
+# Divide the filter controls into four columns
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     alert_types = st.multiselect("Alert type", options=ALERT_TYPE_OPTIONS)
 with col2:
+    # Retrieve the active entities used by the Entity dropdown.
     entities = get_active_entities()
+    # Create an "All" option followed by the entity names.
     entity_names = ["All"] + [e["name"] for e in entities]
     entity_choice = st.selectbox("Entity", options=entity_names)
+        # Convert the selected entity name into its database ID.If "All" is selected, no entity filter is applied.
     entity_id = None if entity_choice == "All" else next(
         e["entity_id"] for e in entities if e["name"] == entity_choice
     )
@@ -104,6 +122,9 @@ with col4:
     date_from = date_range[0] if len(date_range) >= 1 else None
     date_to = date_range[1] if len(date_range) >= 2 else None
 
+
+#! --- Fetch filtered alerts ---
+# Pass all selected filters to the service layer.The service layer builds and executes the database query.
 all_alerts = get_all_alerts(
     search=search, alert_types=alert_types or None, entity_id=entity_id,
     date_from=date_from, date_to=date_to, status=status,
@@ -119,5 +140,6 @@ if all_alerts:
     })[["Entity Name", "Alert Type", "Trigger Headline", "Aggregate Score",
         "Threshold", "Created At", "Status"]]
     st.dataframe(df, width="stretch", hide_index=True)
+        # Display a message when no alerts match the selected filters.
 else:
     st.info("No alerts match your current filters.")
