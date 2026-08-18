@@ -223,4 +223,4 @@ by, the BRD — kept here so the reasoning is documented for the report.
   (double precision) — see the note at the top of `models.py`.
 - **Next phase:** signal aggregation (rolling up sentiment_results +
   article_entities into per-entity signals), then threshold-based alerts.
-llll
+....
