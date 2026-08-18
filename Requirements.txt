@@ -1,7 +1,7 @@
 # ---------------------------------------------------------------------------
 # FinSight AI dependencies (versions follow the BRD operating environment).
 # Phase 1 (schema) only strictly needs the database layer; later phases add
-# their own libraries. Kept together here as the project backbone.
+# their own libraries. Kept together here as the project backbone
 # ---------------------------------------------------------------------------
 
 # --- Database layer (Phase 1: schema) ---
