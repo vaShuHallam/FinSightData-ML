@@ -7,6 +7,22 @@ FinBERT, tags which company/sector each article concerns, aggregates scores
 into per-entity signals, and raises threshold-based alerts — all surfaced
 through an 8-page Streamlit dashboard
 
+#Team Roles
+
+ML Lead – Victor Adeyemi
+Responsibilities: FinBERT integration, signal aggregation, v1/v2 versioning
+
+Data Engineer – Aman
+Responsibilities: Ingestion pipeline, preprocessing, database schema
+
+Evaluation Lead – Ade
+Responsibilities: Gold-standard annotation, F1/precision/recall analysis, Cohen's kappa, user testing
+
+Frontend / Deploy – Victor Olowoporoku
+Responsibilities: Streamlit dashboard (8 pages), service-layer/UI integration, caching strategy, deployment configuration, end-to-end pipeline validation
+
+Project Manager – Samuel
+Responsibilities: Project coordination, timeline management, report compilation
 
 ## Project layout
 
