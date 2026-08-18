@@ -7,6 +7,9 @@ FinBERT, tags which company/sector each article concerns, aggregates scores
 into per-entity signals, and raises threshold-based alerts — all surfaced
 through an 8-page Streamlit dashboard
 
+## My Role — Evaluation
+
+Perform the evaluation of the sentiment and entity-extraction modules with a human-annotated gold standard dataset, analyse the inter-annotator agreement and report the evaluation method, results and limitations.
 
 ## Project layout
 
@@ -104,6 +107,34 @@ application code rather than raw strings to avoid typos. Store `.value`.
 
 ## Evaluation
 
+It was evaluated using financial news articles independently annotated by humans to create a gold-standard to assess the performance of the sentiment and entity-extraction components.
+
+Two annotators independently labelled the articles, and inter-annotator agreement was assessed using Cohen's kappa. Where disagreements occurred, a paid expert annotation was used to support their resolution. Reconciled annotations were then used to create the final gold standard for model evaluation.
+
+For sentiment classification, Macro F1-score and per-class F1-score were used to measure the model performance while precision and recall were used for evaluate the model’s performance in entity extraction. The abstention rate of the model was also taken into account when assessing the model.
+
+### Evaluation Results
+
+- **Cohen's Kappa:** 0.62
+- **Macro F1-score:** 0.63
+- **Entity Precision:** 0.98
+- **Entity Recall:** 0.20
+- **Abstention Rate:** approximately 11.3%
+
+The evaluation showed that the neutral sentiment was less well than the positive and negative sentiment. The results showed that entity extraction had high precision but the recall is very low, indicating that many entities in the human-annotated benchmark were not detected by the system.
+
+### Evaluation Limitations
+
+The financial news sources included in the benchmark may not capture the full diversity of financial reporting, and the relatively small evaluation dataset may not be representative of financial news across all settings. Therefore, the results should not be viewed as conclusive evidence of performance across all financial-news contexts.
+
+The evaluation helped point out potential areas for future improvement, such as better handling of neutral sentiment and improving entity recall.
+
+### Responsible Evaluation
+
+The system is not meant to be used as an investment advice tool but as a sentiment indicator. The confidence and abstention mechanism are a means to communicate uncertainty, not to give unreliable signals by presenting uncertain classifications.
+
+### Evaluation Workflow
+
 ```bash
 python compute_gold_standard_metrics.py --version-label v1
 ```
@@ -111,8 +142,7 @@ python compute_gold_standard_metrics.py --version-label v1
 Reads annotator label files, computes Cohen's kappa on the gold standard,
 scores FinBERT's predictions (macro F1, per-class F1, entity precision/recall,
 abstention rate), and writes `evaluation_results_v1.json` — read by the
-Evaluation Dashboard page. Re-run with `--version-label v2` after implementing
-targeted improvements to produce a v1-vs-v2 comparison.
+Evaluation Dashboard page.
 
 ## Notes & next steps
 
