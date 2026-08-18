@@ -1,9 +1,12 @@
 """
 Seed the model_versions table with the v1 (baseline) configuration.
 
-model_versions is what the Evaluation Dashboard's v1-vs-v2 comparison reads
-from (macro_f1_score, entity_precision, entity_recall get filled in later,
-after running the evaluation harness against the gold-standard set).
+model_versions is the table the Evaluation Dashboard reads from for its
+v1-vs-v2 comparison view. When a row first gets created here, the three
+score columns — macro_f1_score, entity_precision, entity_recall — start
+out empty. They only get filled in once you've run the evaluation
+harness against the gold-standard set, so don't expect numbers to show
+up in the dashboard until that's happened.
 
 Usage:
     python seed_model_versions.py

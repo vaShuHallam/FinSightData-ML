@@ -1,11 +1,17 @@
 """
 CLI entry point to run one sentiment-analysis cycle.
 
-Analyzes every article that doesn't yet have a sentiment_results row, using
-FinBERT. Requires transformers + torch installed, and internet access to
-HuggingFace Hub on first run (downloads ~440MB of model weights, cached
-locally after that) — run this on your own machine or Colab, not inside a
-network-restricted sandbox.
+Runs FinBERT sentiment analysis on every article that doesn't have a
+sentiment_results row yet. You'll need transformers and torch installed.
+
+Heads up: the first run also needs internet access, since it has to pull
+FinBERT's weights (~440MB) from the HuggingFace Hub. After that they're
+cached locally (usually under ~/.cache/huggingface), so later runs don't
+need a connection at all.
+
+Because of that first download, don't run this in a network-restricted
+sandbox — it'll just hang or throw a connection error. Stick to your own
+machine or Colab, where you've actually got a connection.
 
 Usage:
     python run_sentiment.py

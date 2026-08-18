@@ -1,14 +1,19 @@
 """
 Seed the entities table with a starter set to track.
 
-Every downstream table (signals, alerts, watchlist, article_entities) references
-entities, so this needs to run once before ingestion. Safe to run repeatedly:
-entities that already exist (matched by unique name) are skipped, not duplicated.
+This needs to run once before ingestion — every downstream table
+(signals, alerts, watchlist, article_entities) references entities, so
+there's nothing for them to link to until it does.
 
-Edit STARTER_ENTITIES below to track whatever you like. entity_type must be one
-of: Company, Index, Sector, Commodity. ticker_symbol / exchange can be None for
-indices, sectors, and commodities.
+It's safe to run again later, too. Entities are matched by their unique
+name, so anything that's already there gets skipped instead of
+duplicated — re-running won't leave you with two rows for the same
+company.
 
+Want to track something new? Add it to STARTER_ENTITIES below.
+entity_type has to be one of: Company, Index, Sector, Commodity —
+nothing else is recognized. ticker_symbol and exchange can be left as
+None for anything that isn't a company (indices, sectors, commodities).
 Usage:
     python seed_entities.py
 """
