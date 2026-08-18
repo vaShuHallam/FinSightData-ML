@@ -15,8 +15,8 @@ Usage:
 import argparse
 import logging
 
-from app.sentiment.finbert_analyzer import FinBERTSentimentAnalyzer
-from app.sentiment.pipeline import run_sentiment_analysis
+from Dashboard.sentiment.finbert_analyzer import FinBERTSentimentAnalyzer
+from Dashboard.sentiment.pipeline import run_sentiment_analysis
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 

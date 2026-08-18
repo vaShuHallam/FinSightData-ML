@@ -7,8 +7,8 @@ the entities and thresholds that drive alert generation.
 
 import streamlit as st
 
-from app.services.dashboard_service import get_active_entities
-from app.services.watchlist_service import (
+from Dashboard.services.dashboard_service import get_active_entities
+from Dashboard.services.watchlist_service import (
     WINDOW_SIZE_OPTIONS,
     add_watchlist_entry,
     get_watchlist,

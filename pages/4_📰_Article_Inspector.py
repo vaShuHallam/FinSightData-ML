@@ -9,12 +9,12 @@ weight applied to it during signal aggregation.
 import pandas as pd
 import streamlit as st
 
-from app.services.article_inspector_service import (
+from Dashboard.services.article_inspector_service import (
     SENTIMENT_OPTIONS,
     get_article_detail,
     get_articles,
 )
-from app.services.dashboard_service import get_active_entities
+from Dashboard.services.dashboard_service import get_active_entities
 
 st.set_page_config(page_title="Article Inspector", page_icon="📰", layout="wide")
 st.title("📰 Article Inspector")

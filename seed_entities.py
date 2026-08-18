@@ -13,8 +13,8 @@ Usage:
     python seed_entities.py
 """
 
-from app.db import get_session
-from app.models import Entity, EntityType
+from Dashboard.db import get_session
+from Dashboard.models import Entity, EntityType
 
 # (name, ticker, entity_type, sector, exchange)
 STARTER_ENTITIES = [

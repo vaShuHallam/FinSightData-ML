@@ -16,8 +16,8 @@ Usage:
     python seed_watchlist.py
 """
 
-from app.db import get_session
-from app.models import Entity, Watchlist
+from Dashboard.db import get_session
+from Dashboard.models import Entity, Watchlist
 
 # A single demo session — in the real dashboard this would be the logged-in
 # user's session_id, generated per browser session per the BRD.

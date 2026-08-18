@@ -9,7 +9,7 @@ Usage:
 import argparse
 import logging
 
-from app.signals.pipeline import run_signal_aggregation
+from Dashboard.signals.pipeline import run_signal_aggregation
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 

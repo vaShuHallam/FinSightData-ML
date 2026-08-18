@@ -11,9 +11,9 @@ Usage:
 
 from datetime import datetime, timezone
 
-from app.config import SENTIMENT_CONFIDENCE_THRESHOLD
-from app.db import get_session
-from app.models import ModelVersion
+from Dashboard.config import SENTIMENT_CONFIDENCE_THRESHOLD
+from Dashboard.db import get_session
+from Dashboard.models import ModelVersion
 
 
 def seed() -> None:

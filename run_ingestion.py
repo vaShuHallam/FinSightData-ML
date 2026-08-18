@@ -10,9 +10,9 @@ Usage:
 import argparse
 import logging
 
-from app.ingestion.alphavantage_fetcher import AlphaVantageFetcher
-from app.ingestion.newsapi_fetcher import NewsAPIFetcher
-from app.ingestion.pipeline import run_ingestion
+from Dashboard.ingestion.alphavantage_fetcher import AlphaVantageFetcher
+from Dashboard.ingestion.newsapi_fetcher import NewsAPIFetcher
+from Dashboard.ingestion.pipeline import run_ingestion
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 

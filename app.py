@@ -13,7 +13,7 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from app.services.dashboard_service import (
+from Dashboard.services.dashboard_service import (
     WINDOW_LABEL_TO_HOURS,
     get_active_entities,
     get_pipeline_status,

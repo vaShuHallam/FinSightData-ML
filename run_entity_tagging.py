@@ -9,7 +9,7 @@ Usage:
 import argparse
 import logging
 
-from app.entity_tagging.pipeline import build_hybrid_tagger, build_rule_based_tagger, run_entity_tagging
+from Dashboard.entity_tagging.pipeline import build_hybrid_tagger, build_rule_based_tagger, run_entity_tagging
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 

@@ -10,7 +10,7 @@ import sys
 
 from sqlalchemy import inspect
 
-from app.db import drop_db, engine, init_db
+from Dashboard.db import drop_db, engine, init_db
 
 if __name__ == "__main__":
     if "--reset" in sys.argv:

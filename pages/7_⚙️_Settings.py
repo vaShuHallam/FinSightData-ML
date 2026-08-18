@@ -5,7 +5,7 @@ FinSight AI — Settings / Pipeline Configuration page (REQ-9).
 import pandas as pd
 import streamlit as st
 
-from app.services.settings_service import (
+from Dashboard.services.settings_service import (
     ENTITY_TYPE_OPTIONS,
     SECTOR_OPTIONS,
     add_entity,
@@ -45,24 +45,24 @@ pipeline_query = st.text_input("Ingestion query", value="stock market OR earning
 
 if st.button("▶️ Run Full Pipeline"):
     with st.spinner("Fetching articles..."):
-        from app.ingestion.newsapi_fetcher import NewsAPIFetcher
-        from app.ingestion.pipeline import run_ingestion
+        from Dashboard.ingestion.newsapi_fetcher import NewsAPIFetcher
+        from Dashboard.ingestion.pipeline import run_ingestion
         ingestion_summary = run_ingestion(NewsAPIFetcher(), query=pipeline_query, max_results=50)
     st.write(f"Fetch: {ingestion_summary}")
 
     with st.spinner("Tagging entities..."):
-        from app.entity_tagging.pipeline import build_rule_based_tagger, run_entity_tagging
+        from Dashboard.entity_tagging.pipeline import build_rule_based_tagger, run_entity_tagging
         tagging_summary = run_entity_tagging(build_rule_based_tagger())
     st.write(f"Entity tagging: {tagging_summary}")
 
     with st.spinner("Running sentiment analysis (FinBERT — may take a while)..."):
-        from app.sentiment.finbert_analyzer import FinBERTSentimentAnalyzer
-        from app.sentiment.pipeline import run_sentiment_analysis
+        from Dashboard.sentiment.finbert_analyzer import FinBERTSentimentAnalyzer
+        from Dashboard.sentiment.pipeline import run_sentiment_analysis
         sentiment_summary = run_sentiment_analysis(FinBERTSentimentAnalyzer())
     st.write(f"Sentiment: {sentiment_summary}")
 
     with st.spinner("Aggregating signals..."):
-        from app.signals.pipeline import run_signal_aggregation
+        from Dashboard.signals.pipeline import run_signal_aggregation
         signal_summary = run_signal_aggregation()
     st.write(f"Signals: {signal_summary}")
 

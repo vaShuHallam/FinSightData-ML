@@ -8,7 +8,7 @@ the triggering signal inline). All Alerts is a filterable read-only history.
 import pandas as pd
 import streamlit as st
 
-from app.services.alert_centre_service import (
+from Dashboard.services.alert_centre_service import (
     ALERT_TYPE_OPTIONS,
     STATUS_OPTIONS,
     acknowledge_alert,
@@ -19,7 +19,7 @@ from app.services.alert_centre_service import (
     get_signal_for_alert,
     save_relevance_rating,
 )
-from app.services.dashboard_service import get_active_entities
+from Dashboard.services.dashboard_service import get_active_entities
 
 st.set_page_config(page_title="Alert Centre", page_icon="🔔", layout="wide")
 st.title("🔔 Alert Centre")

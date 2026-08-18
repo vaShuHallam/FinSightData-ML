@@ -12,7 +12,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from app.services.evaluation_service import (
+from Dashboard.services.evaluation_service import (
     build_comparison_table,
     get_iteration_summary,
     get_user_testing_results,

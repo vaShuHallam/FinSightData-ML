@@ -20,8 +20,8 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from app.db import get_session
-from app.models import Article, Entity
+from Dashboard.db import get_session
+from Dashboard.models import Article, Entity
 
 # The 5 headlines bundled in app/ingestion/sample_data.py, used as a
 # ingestion-testing fallback when no NEWSAPI_KEY is set. These are excluded

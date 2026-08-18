@@ -8,7 +8,7 @@ filtering, sorting, CSV export, and a drill-down Signal Detail view.
 import pandas as pd
 import streamlit as st
 
-from app.services.signal_feed_service import (
+from Dashboard.services.signal_feed_service import (
     ENTITY_TYPE_OPTIONS,
     SORT_OPTIONS,
     STRENGTH_OPTIONS,

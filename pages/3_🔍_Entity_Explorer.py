@@ -11,8 +11,8 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from app.services.dashboard_service import get_active_entities
-from app.services.entity_explorer_service import (
+from Dashboard.services.dashboard_service import get_active_entities
+from Dashboard.services.entity_explorer_service import (
     TIME_RANGE_TO_HOURS,
     add_to_watchlist,
     get_entity_metadata,

@@ -30,8 +30,8 @@ from datetime import datetime, timezone
 from openpyxl import Workbook, load_workbook
 from sklearn.metrics import classification_report, cohen_kappa_score, confusion_matrix
 
-from app.db import get_session
-from app.models import Article, ArticleEntity, Entity, ModelVersion, SentimentResult
+from Dashboard.db import get_session
+from Dashboard.models import Article, ArticleEntity, Entity, ModelVersion, SentimentResult
 
 VALID_LABELS = {"positive", "negative", "neutral"}
 LABEL_ORDER = ["positive", "negative", "neutral"]  # fixed order for confusion matrix rows/cols

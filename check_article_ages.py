@@ -9,8 +9,8 @@ Usage:
 
 from datetime import datetime, timezone
 
-from app.db import get_session
-from app.models import Article, ArticleEntity, Entity
+from Dashboard.db import get_session
+from Dashboard.models import Article, ArticleEntity, Entity
 
 with get_session() as s:
     rows = (

@@ -7,7 +7,7 @@ Usage:
 
 import logging
 
-from app.alerts.pipeline import run_alert_generation
+from Dashboard.alerts.pipeline import run_alert_generation
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
