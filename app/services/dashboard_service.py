@@ -1,15 +1,4 @@
-"""
-Dashboard data-access service (REQ-2).
 
-The BRD specifies REST endpoints (GET /api/v1/signals/summary, etc.), but
-the actual deployment target is Streamlit, which isn't a REST server.
-Rather than run a second FastAPI process alongside Streamlit just to
-satisfy the letter of the spec, these functions are the internal
-equivalent: same inputs, same outputs, called directly by the dashboard
-instead of over HTTP. Documented as a scope decision in the README.
-
-Each function's docstring notes which BRD endpoint it stands in for.
-"""
 
 from datetime import datetime, timedelta, timezone
 
@@ -18,8 +7,7 @@ from sqlalchemy import func
 from app.db import get_session
 from app.models import Alert, Article, Entity, PipelineRun, Signal, Watchlist
 
-# Window-selector labels from the BRD (REQ-2, Time Window Selector) mapped
-# to hours, since the UI shows human labels but the DB filters on hours.
+# Window-selector labels from the BRD  mapped to hours, since the UI shows human labels but the DB filters on hours.
 WINDOW_LABEL_TO_HOURS = {"6h": 6, "12h": 12, "24h": 24, "7 days": 24 * 7}
 
 
@@ -143,7 +131,8 @@ def get_watchlist_signals(session_id: str) -> list[dict]:
 
 
 def get_unacknowledged_alert_count() -> int:
-    """Stands in for: GET /api/v1/alerts?is_acknowledged=false&count=true"""
+    """Stands in for: GET /api/v1/alerts?is_acknowledged=false&count=true
+    To get  "unacknowledged alerts" warning banner"""
     with get_session() as session:
         return (
             session.query(func.count(Alert.alert_id))

@@ -12,12 +12,13 @@ from app.db import get_session
 from app.models import Article, ArticleEntity, Entity, SentimentResult, Signal, Watchlist
 
 TIME_RANGE_TO_HOURS = {"Last 24 hours": 24, "Last 7 days": 24 * 7, "Last 30 days": 24 * 30}
+# Default values used when an entity is added to a watchlist.
 DEFAULT_ALERT_THRESHOLD = 0.60
 DEFAULT_WINDOW_HOURS = 6
 
 
 def _as_utc(dt: datetime) -> datetime:
-    """SQLite drops tzinfo on round-trip; everything here is written in UTC."""
+    """This function treats timezone-naive values as UTC."""
     return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
 
 
@@ -27,7 +28,7 @@ def get_entity_metadata(entity_id: int, session_id: str) -> dict | None:
         entity = session.get(Entity, entity_id)
         if entity is None:
             return None
-
+         # Check whether this particular entity is on the current user's/session's watchlist. Both entity_id and session_id must match.
         is_on_watchlist = (
             session.query(Watchlist)
             .filter(Watchlist.entity_id == entity_id, Watchlist.session_id == session_id)
@@ -46,7 +47,9 @@ def get_entity_metadata(entity_id: int, session_id: str) -> dict | None:
 
 
 def get_sentiment_history(entity_id: int, hours: int, window_size_hours: int | None = None) -> list[dict]:
-    """Sentiment History Chart data: aggregate_sentiment_score per signal, over `hours`."""
+    """
+    Retrieves the aggregate sentiment score for each signal
+    belonging to the selected entity within the requested time range.."""
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
     with get_session() as session:
@@ -65,8 +68,7 @@ def get_sentiment_history(entity_id: int, hours: int, window_size_hours: int | N
 def get_signal_distribution(entity_id: int, hours: int) -> list[dict]:
     """
     Signal Distribution Chart data: count of positive/negative/neutral
-    ARTICLES per day (derived from article-level sentiment, not summed
-    across overlapping signal windows, which would double-count).
+    ARTICLES per day .
     """
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
@@ -81,6 +83,7 @@ def get_signal_distribution(entity_id: int, hours: int) -> list[dict]:
         )
 
     daily = defaultdict(lambda: {"positive": 0, "negative": 0, "neutral": 0})
+       # Process each article and add its sentiment to the  appropriate day.
     for published_at, label in rows:
         if published_at is None or label is None:
             continue
@@ -134,8 +137,7 @@ def get_signal_history(entity_id: int) -> list[dict]:
 def add_to_watchlist(entity_id: int, session_id: str) -> tuple[bool, str]:
     """
     Add an entity to the user's watchlist with sensible BRD defaults
-    (alert_threshold=0.60, window_size_hours=6). Returns (success, message)
-    using the exact status-alert wording from the BRD's Watchlist page spec.
+    (alert_threshold=0.60, window_size_hours=6). Returns (True, success message) if the entity was added.(False, error message) if it is already on the watchlist
     """
     with get_session() as session:
         existing = (

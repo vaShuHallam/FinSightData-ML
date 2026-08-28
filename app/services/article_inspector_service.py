@@ -14,6 +14,7 @@ SENTIMENT_OPTIONS = ["All", "positive", "negative", "neutral"]
 
 
 def get_articles(
+   
     search: str = "",
     sentiment: str | None = None,
     entity_id: int | None = None,
@@ -27,13 +28,15 @@ def get_articles(
     badge, newest first.
     """
     with get_session() as session:
+         # Start the query by retrieving:The complete Article object ,The sentiment label associated with the article
         query = (
             session.query(Article, SentimentResult.sentiment_label)
             .outerjoin(SentimentResult, SentimentResult.article_id == Article.article_id)
         )
-
+        # Only apply the search filter if the user entered text
         if search:
             like = f"%{search}%"
+             # Search both the article headline AND article body.
             query = query.filter(
                 (Article.headline.ilike(like)) | (Article.body.ilike(like))
             )
@@ -71,7 +74,7 @@ def get_article_detail(article_id: int) -> dict | None:
         article = session.get(Article, article_id)
         if article is None:
             return None
-
+         # Find the sentiment result belonging to this article.
         sentiment = (
             session.query(SentimentResult)
             .filter(SentimentResult.article_id == article_id)
